@@ -1,0 +1,11 @@
+[
+    {
+        "file": "boarding-pass-example.png",
+        "output": {
+            "name": "John Doe",
+            "flight": "OKL015",
+            "gate": "B1",
+            "seat": "51A"
+        }
+    }
+]
