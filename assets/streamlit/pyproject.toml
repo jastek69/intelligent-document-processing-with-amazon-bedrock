@@ -1,0 +1,23 @@
+[build-system]
+requires = ["poetry-core>=1.6.1"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "Frontend for Intelligent Document Processing with Amazon Bedrock"
+version = "0.1.0"
+description = "Extract information from unstructured documents at scale with Amazon Bedrock"
+authors = [
+    "AWS Generative Ai Innovation Center",
+]
+
+[tool.poetry.dependencies]
+python = ">3.9.5,<3.9.7 || >3.9.7,<3.12.5"
+boto3 = "~1.27.0"
+streamlit = "1.35.0"
+st-pages = "0.4.5"
+watchdog = "3.0.0"
+pyjwt = "2.7.0"
+python-dotenv = "1.0.1"
+rel = "0.4.9.5"
+pandas = "2.2.0"
+qrcode = "7.4.2"

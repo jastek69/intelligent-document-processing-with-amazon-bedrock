@@ -1,0 +1,9 @@
+[[pages]]
+path = "src/Home.py"
+name = "Home"
+icon = "🏠"
+
+[[pages]]
+path = "src/app_pages/idp_bedrock.py"
+name = "IDP Bedrock"
+icon = "🚀"
