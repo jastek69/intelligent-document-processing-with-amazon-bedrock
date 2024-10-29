@@ -1,0 +1,12 @@
+urllib3<2
+lxml
+python-docx
+unstructured
+python-pptx
+nltk
+s3fs
+networkx
+pandas
+openpyxl
+langchain==0.2.14
+langchain-community==0.2.12

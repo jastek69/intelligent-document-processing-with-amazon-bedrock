@@ -1,0 +1,64 @@
+# This config contains important settings for stack deployment
+# Please read the comments for detailed description of the configuration
+
+stack_name: idp-bedrock  # Used as stack name and prefix for resources (<16 chars, cannot start with "aws")
+
+lambda:
+  architecture: X86_64         # The system architectures compatible with the Lambda functions X86_64 or ARM_64
+  python_runtime: PYTHON_3_12  # Python runtime for Lambda function
+
+s3:
+  use_existing_bucket: False   # Use an existing bucket, otherwise create a new bucket, True or False
+  bucket_name: example-bucket  # Name of existing bucket, requires use_existing_bucket set to True
+  encryption: SSE-S3           # SSE-S3 or SSE-KMS
+  kms_key_arn: None            # Creates new KMS key if set to None, requires encryption=SSE-KMS
+
+textract:
+  region: us-east-1             # Region of Amazon Textract
+  use_table: True               # Whether to do advanced table processing in Textract, True or False
+  table_flatten_headers: True                 # Textract table processing options
+  table_remove_column_headers: True           # Textract table processing options
+  table_duplicate_text_in_merged_cells: True  # Textract table processing options
+  hide_footer_layout: True                    # Textract page layout processing options
+  hide_header_layout: True                    # Textract page layout processing options
+  hide_page_num_layout: True                  # Textract page layout processing options
+
+bedrock:
+  region: us-west-2              # Region of Amazon Bedrock
+  model_ids:                     # List of enabled Bedrock models (must be available model IDs in Bedrock console)
+    - anthropic.claude-3-5-sonnet-20241022-v2:0  # The first model in the list is pre-selected by default in the UI
+    - anthropic.claude-3-5-sonnet-20240620-v1:0
+    - anthropic.claude-3-haiku-20240307-v1:0
+    - anthropic.claude-3-sonnet-20240229-v1:0
+    - anthropic.claude-3-opus-20240229-v1:0
+    - mistral.mistral-large-2402-v1:0
+    - mistral.mistral-small-2402-v1:0
+    - mistral.mixtral-8x7b-instruct-v0:1
+    - mistral.mistral-7b-instruct-v0:2
+    - meta.llama3-70b-instruct-v1:0
+    - meta.llama3-8b-instruct-v1:0
+    - amazon.titan-text-premier-v1:0
+    - amazon.titan-text-express-v1
+    - amazon.titan-text-lite-v1
+    # - cohere.command-r-plus-v1:0
+    # - cohere.command-r-v1:0
+    # - cohere.command-text-v14
+    # - cohere.command-light-text-v14
+    # - ai21.jamba-instruct-v1:0
+    # - ai21.j2-ultra-v1
+    # - ai21.j2-mid-v1
+
+authentication:               # Authentication settings for the Streamlit frontend
+  MFA: False                  # Set to True/False to enable/disable multi-factor authentication
+  access_token_validity: 720  # Time until access token expires and a user is logged out (in minutes)
+
+streamlit:
+  deploy_streamlit: True         # Whether to deploy Streamlit frontend on ECS
+  open_to_public_internet: True  # Opens the Application Load Balancer to the internet
+  # ip_address_allowed: [pl-4e2ece27] # List of IP addresses (cidr ranges) and prefix lists allowed to access the app in the ALB Security Group. If not set, SG is open to the internet
+  ecs_memory: 2_048              # Memory of the ECS instance (Mb)
+  ecs_cpu: 1_024                 # CPU of ECS instance
+  cover_image_url: app/static/cover_image.jpeg  # custom cover image on app pages
+  assistant_avatar: https://d1.awsstatic.com/products/bedrock/icon_64_amazonbedrock.302e08f0c3cd2a11d37eb3d77cb894bc5ceff8e4.png  # avatar of the chatbot
+
+cdk_nag: True # Enable cdk_nag check, True or False
