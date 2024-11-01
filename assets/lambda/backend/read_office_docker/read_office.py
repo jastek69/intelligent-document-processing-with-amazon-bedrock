@@ -41,6 +41,7 @@ S3_BUCKET = os.environ["BUCKET_NAME"]
 NLTK_DATA = "/tmp/nltk_data"
 TMP_DIR = "/tmp"
 
+
 PREFIX_ORIGINALS = "originals"
 PREFIX_PROCESSED = "processed"
 
@@ -51,6 +52,10 @@ HTML_EXTENSIONS = json.loads(os.environ["HTML_EXTENSIONS"])
 MARKDOWN_EXTENSIONS = json.loads(os.environ["MARKDOWN_EXTENSIONS"])
 
 S3_CLIENT = boto3.client("s3")
+
+# Create NLTK_DATA directory
+os.makedirs(NLTK_DATA, exist_ok=True)
+nltk.data.path.append(NLTK_DATA)
 nltk.download("punkt", download_dir=NLTK_DATA)
 nltk.download("averaged_perceptron_tagger", download_dir=NLTK_DATA)
 
@@ -87,6 +92,7 @@ def lambda_handler(event, context):  # noqa: C901
         # load document
         LOGGER.info(f"Loading doc {file_name}")
         LOGGER.info(f"Local file_path {local_file_path}")
+        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
         S3_CLIENT.download_file(S3_BUCKET, file_name, local_file_path)
 
         extension = object_path.suffix
