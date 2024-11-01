@@ -205,6 +205,11 @@ You can run the Streamlit frontend locally for testing and development by follow
 - Start frontend on localhost ```streamlit run src/Home.py```
 - Copy the local URL from the terminal output and paste in the address bar of your browser
 
+# 🏗️ Architecture
+
+The following diagram illustrates the high-level architecture of this solution:
+
+![diagram/architecture.png](diagram/architecture.png)
 
 # 👥 Team
 
