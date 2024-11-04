@@ -1,4 +1,4 @@
-# Intelligent Document Processing with GenAI
+# Intelligent Document Processing with Generative AI
 
 🚀 Extract information from unstructured documents at scale with Amazon Bedrock
 
@@ -9,6 +9,7 @@
 - [Overview](#overview)
 - [Deploy the App](#deploy-the-app)
 - [Use the App](#use-the-app)
+- [Architecture](#architecture)
 - [Team](#team)
 - [Security](#security)
 - [License](#license)
