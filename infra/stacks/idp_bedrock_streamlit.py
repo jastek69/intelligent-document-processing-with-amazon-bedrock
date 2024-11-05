@@ -17,6 +17,7 @@ from aws_cdk import aws_elasticloadbalancingv2 as elbv2
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as _s3
+from aws_cdk import aws_ssm as ssm
 from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk.aws_ecr_assets import DockerImageAsset
 from cdk_nag import NagPackSuppression, NagSuppressions
@@ -83,6 +84,8 @@ class IDPBedrockStreamlitStack(NestedStack):
         ecs_cpu: int = 512,
         ecs_memory: int = 1024,
         ssm_client_id=None,
+        ssm_user_pool_id: ssm.StringParameter = None,
+        ssm_region: ssm.StringParameter = None,
         ssm_api_uri=None,
         ssm_bucket_name=None,
         ssm_cover_image_url=None,
@@ -104,6 +107,8 @@ class IDPBedrockStreamlitStack(NestedStack):
         self.s3_logs_bucket = s3_logs_bucket
         # self.enable_waf = enable_waf
         self.ssm_client_id = ssm_client_id
+        self.ssm_user_pool_id = ssm_user_pool_id
+        self.ssm_region = ssm_region
         self.ssm_api_uri = ssm_api_uri
         self.ssm_bucket_name = ssm_bucket_name
         self.ssm_cover_image_url = ssm_cover_image_url
@@ -323,6 +328,8 @@ class IDPBedrockStreamlitStack(NestedStack):
             port_mappings=[ecs.PortMapping(container_port=8501, protocol=ecs.Protocol.TCP)],
             secrets={
                 "CLIENT_ID": ecs.Secret.from_ssm_parameter(self.ssm_client_id),
+                "USER_POOL_ID": ecs.Secret.from_ssm_parameter(self.ssm_user_pool_id),
+                "REGION": ecs.Secret.from_ssm_parameter(self.ssm_region),
                 "API_URI": ecs.Secret.from_ssm_parameter(self.ssm_api_uri),
                 "BUCKET_NAME": ecs.Secret.from_ssm_parameter(self.ssm_bucket_name),
                 "COVER_IMAGE_URL": ecs.Secret.from_ssm_parameter(self.ssm_cover_image_url),

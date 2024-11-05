@@ -46,12 +46,6 @@ class IDPBedrockLambdaLayers(Construct):
             description="Lambda layer including upgraded boto3 (e.g. for Bedrock), Langchain, OpenSearchPy, etc.",
         )
 
-        self.jwt = self._create_layer_from_asset(
-            layer_name=f"{stack_name}-jwt",
-            path_to_layer_assets="./assets/layers/libraries/jwt",
-            description="Lambda layer that contains JSON Web Token Python implementation to decode tokens",
-        )
-
         self.textractor = self._create_layer_from_asset(
             layer_name=f"{stack_name}-textractor",
             path_to_layer_assets="./assets/layers/textractor/",

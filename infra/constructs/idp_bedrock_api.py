@@ -214,13 +214,20 @@ class IDPBedrockAPIConstructs(Construct):
         )
 
         self.client_id = self.user_pool_client.user_pool_client_id
+        self.user_pool_id = self.user_pool.user_pool_id
+
         self.ssm_client_id = ssm.StringParameter(
             self,
             f"{self.prefix}-SsmClientId",
             parameter_name=f"/{self.stack_name}/ecs/CLIENT_ID",
             string_value=self.client_id,
         )
-
+        self.ssm_user_pool_id = ssm.StringParameter(
+            self,
+            f"{self.prefix}-SsmUserPoolId",
+            parameter_name=f"/{self.prefix}/ecs/USER_POOL_ID",
+            string_value=self.user_pool_id,
+        )
 
     def create_dynamodb(self):
         self.few_shots_table = ddb.Table(
@@ -233,7 +240,6 @@ class IDPBedrockAPIConstructs(Construct):
             removal_policy=RemovalPolicy.DESTROY,
             point_in_time_recovery=True,
         )
-
 
     ## **************** Lambda Functions ****************
     def create_lambda_functions(self):
@@ -295,9 +301,9 @@ class IDPBedrockAPIConstructs(Construct):
             environment={
                 "BUCKET_NAME": self.s3_data_bucket.bucket_name,
                 "BEDROCK_REGION": self.bedrock_region,
-                "FEW_SHOTS_TABLE_NAME": self.few_shots_table.table_name
+                "FEW_SHOTS_TABLE_NAME": self.few_shots_table.table_name,
             },
-            role=self.lambda_attributes_role, # TODO consider making a separate role?
+            role=self.lambda_attributes_role,  # TODO consider making a separate role?
         )
         self.llm_attributes_lambda.add_alias(
             "Warm",

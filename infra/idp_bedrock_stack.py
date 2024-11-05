@@ -209,6 +209,12 @@ class IDPBedrockStack(Stack):
             parameter_name=f"/{stack_name}/ecs/BEDROCK_MODEL_IDS",
             string_value=json.dumps(config["bedrock"].get("model_ids", [])),
         )
+        self.ssm_region = ssm.StringParameter(
+            self,
+            f"{stack_name}-SsmRegion",
+            parameter_name=f"/{stack_name}/ecs/REGION",
+            string_value=self.region,
+        )
 
         ## **************** S3 BUCKET ****************
 
@@ -232,6 +238,8 @@ class IDPBedrockStack(Stack):
                 open_to_public_internet=config["streamlit"]["open_to_public_internet"],
                 ip_address_allowed=config["streamlit"].get("ip_address_allowed"),
                 ssm_client_id=self.api_constructs.ssm_client_id,
+                ssm_user_pool_id=self.api_constructs.ssm_user_pool_id,
+                ssm_region=self.ssm_region,
                 ssm_api_uri=self.api_constructs.ssm_api_uri,
                 ssm_bucket_name=self.ssm_bucket_name,
                 ssm_cover_image_url=self.ssm_cover_image_url,

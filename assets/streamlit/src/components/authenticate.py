@@ -12,6 +12,7 @@ import jwt
 import qrcode
 import streamlit as st
 from botocore.exceptions import ClientError, ParamValidationError
+from jwt import PyJWKClient
 from qrcode.image.styledpil import StyledPilImage
 
 if "AWS_ACCESS_KEY_ID" in os.environ:
@@ -25,6 +26,14 @@ if "AWS_ACCESS_KEY_ID" in os.environ:
     )
 else:
     client = boto3.client("cognito-idp")
+
+# constants
+CLIENT_ID = os.environ.get("CLIENT_ID")
+USER_POOL_ID = os.environ.get("USER_POOL_ID")
+REGION = os.environ.get("REGION")
+
+# Initialize the JWT client
+jwks_client = PyJWKClient(f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json")
 
 
 def initialise_st_state_vars() -> None:
@@ -79,28 +88,31 @@ def generate_qrcode(url: str, path: str) -> str:
     return qrcode_path
 
 
-def verify_access_token(token: str):
-    """
-    Verify if token duration has expired
+def verify_access_token(token):
+    try:
+        # Get the signing key
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
 
-    Parameters
-    ----------
-    token : str
-        jwt token to verify
+        # Decode and verify the token
+        decoded_data = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}",
+            options={
+                "verify_aud": False,
+                "verify_signature": True,
+                "verify_exp": False,
+                "verify_iss": True,
+                "require": ["token_use", "exp", "iss", "sub"],
+            },
+        )
+        expires = decoded_data["exp"]
+        now = datetime.now().timestamp()
+        return (expires - now) > 0
 
-    Returns
-    -------
-    _type_
-        _description_
-    """
-
-    decoded_data = jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
-
-    expires = decoded_data["exp"]
-
-    now = datetime.now().timestamp()
-
-    return (expires - now) > 0
+    except jwt.exceptions.InvalidTokenError:
+        raise Exception("Invalid token")
 
 
 def update_access_token() -> None:
