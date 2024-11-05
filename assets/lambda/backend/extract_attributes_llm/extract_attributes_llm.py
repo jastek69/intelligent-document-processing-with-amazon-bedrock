@@ -35,6 +35,7 @@ LOGGER.addHandler(HANDLER)
 #########################
 
 MAX_DOC_LENGTH_DIC = {
+    "anthropic.claude-3-5-haiku-20241022-v1:0": 200_000,
     "anthropic.claude-3-5-sonnet-20241022-v2:0": 200_000,
     "anthropic.claude-3-5-sonnet-20240620-v1:0": 200_000,
     "anthropic.claude-3-opus-20240229-v1:0": 200_000,

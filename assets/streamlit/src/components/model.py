@@ -1,6 +1,10 @@
 from typing import Any, Dict, List, Tuple
 
 ALL_MODEL_SPECS = {
+    "Claude 3.5 Haiku": {
+        "MODEL_ID": "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "TEMPERATURE_DEFAULT": 0.0,
+    },
     "Claude 3.5 Sonnet (new)": {
         "MODEL_ID": "anthropic.claude-3-5-sonnet-20241022-v2:0",
         "TEMPERATURE_DEFAULT": 0.0,

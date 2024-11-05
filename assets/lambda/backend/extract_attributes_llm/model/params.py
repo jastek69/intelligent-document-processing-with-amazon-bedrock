@@ -50,6 +50,7 @@ class ModelSpecificParams:
         "top_p": "topP",
     }
     __maps__ = {
+        "anthropic.claude-3-5-haiku-20241022-v1:0": __anthropic_mapping__,
         "anthropic.claude-3-5-sonnet-20241022-v2:0": __anthropic_mapping__,
         "anthropic.claude-3-5-sonnet-20240620-v1:0": __anthropic_mapping__,
         "anthropic.claude-3-sonnet-20240229-v1:0": __anthropic_mapping__,
