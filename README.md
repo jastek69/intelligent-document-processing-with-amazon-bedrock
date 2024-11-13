@@ -90,7 +90,7 @@ When working locally, make sure you have installed the following tools, language
 - [Node.js](https://cdkworkshop.com/15-prerequisites/300-nodejs.html)
 - [IDE for your programming language](https://cdkworkshop.com/15-prerequisites/400-ide.html)
 - [AWS CDK Toolkit](https://cdkworkshop.com/15-prerequisites/500-toolkit.html)
-- [Python](https://cdkworkshop.com/15-prerequisites/600-python.html)
+- [Python 3.12](https://cdkworkshop.com/15-prerequisites/600-python.html)
 
 ### 3. Activate the Environment
 
