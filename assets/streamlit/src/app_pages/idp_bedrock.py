@@ -52,6 +52,7 @@ from components.constants import (
     MAX_FEW_SHOTS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
+    OFFICE_EXTENSIONS,
 )
 from components.frontend import show_empty_container, show_footer
 from components.model import get_models_specs
@@ -486,6 +487,12 @@ with tab_docs:
             if st.session_state["parsing_mode"] != "Amazon Bedrock"
             else SUPPORTED_EXTENSIONS_BEDROCK,
         )
+        for file in files:
+            if any([file.name.endswith(i) for i in OFFICE_EXTENSIONS]):
+                st.info(
+                    "ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information."
+                )
+            break
         st.session_state["docs"] = files[::-1]
     else:
         docs_placeholder = st.empty()
