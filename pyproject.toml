@@ -9,6 +9,7 @@ description = "Extract information from unstructured documents at scale with Ama
 authors = [
     "AWS Generative Ai Innovation Center",
 ]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.9.0"
