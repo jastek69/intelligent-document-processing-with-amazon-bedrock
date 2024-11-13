@@ -1,8 +1,8 @@
 pdf2image
-langchain==0.2.14
-langchain-aws==0.1.7
-langchain-community==0.2.12
-boto3==1.34.90
+langchain==0.3.7
+langchain-aws==0.2.7
+langchain-community==0.3.7
+boto3==1.35.59
 aws-lambda-powertools==2.37.0
 fastjsonschema
 defusedxml
