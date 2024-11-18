@@ -224,6 +224,7 @@ class IDPBedrockStack(Stack):
             parameter_name=f"/{stack_name}/ecs/BUCKET_NAME",
             string_value=self.s3_data_bucket.bucket_name,
         )
+        self.bucket_name_output = output(self, id="S3BucketName", value=self.s3_data_bucket.bucket_name)
 
         ## **************** Streamlit NestedStack ****************
         if config["streamlit"]["deploy_streamlit"]:
