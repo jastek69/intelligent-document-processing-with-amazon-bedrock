@@ -19,6 +19,7 @@ from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
 from aws_cdk import aws_stepfunctions as sfn
 from aws_cdk import aws_dynamodb as ddb
+from aws_cdk import CfnOutput as output
 
 from aws_cdk.aws_apigatewayv2_authorizers import HttpUserPoolAuthorizer
 from cdk_nag import NagPackSuppression, NagSuppressions
@@ -111,6 +112,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.create_stepfunction_role()
         self.create_stepfunctions()
         self.state_machine_arn = self.idp_bedrock_state_machine.state_machine_arn
+        self.state_machine_arn_output = output(self, id="StepFunctionsARN", value=self.state_machine_arn)
 
         # authorizer = HttpIamAuthorizer()
         authorizer = HttpUserPoolAuthorizer(
