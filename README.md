@@ -85,12 +85,12 @@ sh install_deps.sh
 
 When working locally, make sure you have installed the following tools, languages as well as access to the target AWS account:
 
-- [AWS CLI](https://cdkworkshop.com/15-prerequisites/100-awscli.html)
-- [AWS Account](https://cdkworkshop.com/15-prerequisites/200-account.html): configure an AWS account with a profile `$ aws configure --profile [profile-name]`
-- [Node.js](https://cdkworkshop.com/15-prerequisites/300-nodejs.html)
-- [IDE for your programming language](https://cdkworkshop.com/15-prerequisites/400-ide.html)
-- [AWS CDK Toolkit](https://cdkworkshop.com/15-prerequisites/500-toolkit.html)
-- [Python 3.12](https://cdkworkshop.com/15-prerequisites/600-python.html)
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [AWS Account](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html): configure an AWS account with a profile `$ aws configure --profile [profile-name]`
+- [Node.js](https://nodejs.org/en/download/package-manager)
+- [IDE for your programming language](https://code.visualstudio.com/)
+- [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
+- [Python 3.12](https://www.python.org/downloads/release/python-3120/)
 
 ### 3. Activate the Environment
 
