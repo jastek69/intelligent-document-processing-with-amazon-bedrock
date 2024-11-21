@@ -23,8 +23,6 @@ from infra.constructs.idp_bedrock_buckets import ServerAccessLogsBucket
 from infra.constructs.idp_bedrock_layers import IDPBedrockLambdaLayers
 from infra.stacks.idp_bedrock_streamlit import IDPBedrockStreamlitStack
 
-DEPLOY_DEV_INDEX = False  # If True an extra Kendra for development is deployed
-
 
 class IDPBedrockStack(Stack):
     """
