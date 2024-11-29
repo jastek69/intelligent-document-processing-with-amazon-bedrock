@@ -308,6 +308,24 @@ class IDPBedrockStreamlitStack(NestedStack):
         )
         task_execution_role.attach_inline_policy(step_functions_policy)
 
+        # Add S3 access
+        s3_docpolicy = iam.PolicyDocument(
+            statements=[
+                iam.PolicyStatement(
+                    actions=["s3:GetObject*", "s3:GetBucket*", "s3:List*", "s3:PutObject*", "s3:DeleteObject*"],
+                    resources=[self.s3_data_bucket.bucket_arn, self.s3_data_bucket.bucket_arn + "/*"],
+                    effect=iam.Effect.ALLOW,
+                ),
+            ]
+        )
+        s3_policy = iam.Policy(
+            self,
+            "S3Policy",
+            policy_name=f"{self.stack_name}-s3-access",
+            document=s3_docpolicy,
+        )
+        task_execution_role.attach_inline_policy(s3_policy)
+
         ecs_log_driver = ecs.LogDrivers.aws_logs(
             stream_prefix="AwsLogsLogDriver", log_group=log_group.log_group
         )  # Full log stream name: [PREFIX]/[CONTAINER-NAME]/[ECS-TASK-ID]

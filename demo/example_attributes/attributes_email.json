@@ -1,18 +1,18 @@
-[{
-    "name": "customer_name",
-    "description": "name of the customer who wrote the email"
-}, 
-{
-    "name": "delay",
-    "description": "Delay of the shipment in days"
-},
-{
-    "name": "language",
-    "description": "two-letter language code of the email"
-},
-{
-    "name": "response",
-    "description": "suggested response to the customer"
-}
-
+[
+    {
+        "name": "customer_name",
+        "description": "name of the customer who wrote the email"
+    }, 
+    {
+        "name": "delay",
+        "description": "Delay of the shipment in days"
+    },
+    {
+        "name": "language",
+        "description": "two-letter language code of the email"
+    },
+    {
+        "name": "response",
+        "description": "suggested response to the customer"
+    }
 ]

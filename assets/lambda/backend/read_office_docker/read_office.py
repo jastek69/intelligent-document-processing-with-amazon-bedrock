@@ -75,13 +75,13 @@ def lambda_handler(event, context):  # noqa: C901
     LOGGER.info(f"Received input: {body}")
 
     file_name = body["file_name"]
-    file_key = f"{PREFIX_PROCESSED}/{file_name.split('/', 1)[-1].rsplit('.')[0]}.txt"
+    file_key = f"{PREFIX_PROCESSED}/{file_name.split('/', 1)[-1].rsplit('.', 1)[0]}.txt"
     LOGGER.info(f"file_name: {file_name}")
 
     doc_text = get_document_text(
         bucket_name=S3_BUCKET,
         prefix=PREFIX_PROCESSED,
-        file_name=f"{file_name.split('/', 1)[-1].rsplit('.')[0]}.txt",
+        file_name=f"{file_name.split('/', 1)[-1].rsplit('.', 1)[0]}.txt",
         max_length=None,
     )
 
