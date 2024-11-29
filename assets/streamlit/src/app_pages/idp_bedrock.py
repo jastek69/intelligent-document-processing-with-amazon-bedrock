@@ -9,11 +9,13 @@ File content:
 #    IMPORTS & LOGGER
 #########################
 
+import asyncio
 import datetime
 import json
 import logging
 import os
 import sys
+from typing import List
 
 from components.ssm import load_ssm_params
 from dotenv import dotenv_values, load_dotenv
@@ -50,9 +52,9 @@ from components.constants import (
     MAX_CHARS_NAME,
     MAX_DOCS,
     MAX_FEW_SHOTS,
+    OFFICE_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
-    OFFICE_EXTENSIONS,
 )
 from components.frontend import show_empty_container, show_footer
 from components.model import get_models_specs
@@ -348,10 +350,30 @@ def process_response(parsed_response: list, wide=True) -> dict:
     return output_dict
 
 
+async def upload_file_async(doc, access_token: str, doc_idx: int) -> tuple[int, str]:
+    """Helper function to upload a single file asynchronously"""
+    file_key = await api.invoke_file_upload_async(file=doc, access_token=access_token)
+    return (doc_idx, file_key)
+
+
+async def upload_all_files_async(docs, access_token: str, progress_callback) -> List[str]:
+    """Upload all files concurrently and update progress"""
+    file_keys = [""] * len(docs)
+    tasks = [upload_file_async(doc, access_token, idx) for idx, doc in enumerate(docs)]
+
+    completed = 0
+    total = len(docs)
+    for task in asyncio.as_completed(tasks):
+        doc_idx, file_key = await task
+        completed += 1
+        file_keys[doc_idx] = file_key
+        progress_callback(completed, total)
+        LOGGER.info(f"File {doc_idx + 1} uploaded with key: {file_key}")
+
+    return file_keys
+
+
 def run_extraction() -> None:
-    """
-    Run API call to retrieve the LLM answer
-    """
     LOGGER.info("Inside run_extraction()")
 
     st.session_state["parsed_response"] = []
@@ -359,32 +381,60 @@ def run_extraction() -> None:
     st.session_state["model_id"] = MODEL_SPECS[st.session_state["ai_model"]]["MODEL_ID"]
 
     if len(st.session_state["docs"]) > 1:
-        status_message = "Analyzing documents in parallel..."
+        analyze_message = "Analyzing documents in parallel..."
     else:
-        status_message = "Analyzing the document..."
+        analyze_message = "Analyzing the document..."
 
+    # Create persistent containers for status and errors
+    status_container = st.empty()
+    error_container = st.container()
     thinking = st.empty()
     vertical_space = show_empty_container()
+
     with thinking.container():
         with st.chat_message(name="assistant", avatar=ASSISTANT_AVATAR):
-            file_keys = []
-            for doc_idx, doc in enumerate(st.session_state["docs"]):
-                with st.spinner(f"Uploading document {doc_idx + 1}/{len(st.session_state['docs'])}..."):
-                    file_key = api.invoke_file_upload(file=doc, access_token=st.session_state["access_tkn"])
-                    file_keys.append(file_key)
-                    LOGGER.info(f"file key: {file_key}")
-            with st.spinner(status_message):
-                api.invoke_step_function(
-                    file_keys=file_keys,
-                    attributes=st.session_state["attributes"],
-                    instructions=st.session_state.get("instructions", ""),
-                    few_shots=st.session_state.get("few_shots", []),
-                    model_id=st.session_state["model_id"],
-                    parsing_mode=st.session_state["parsing_mode"],
-                    temperature=float(st.session_state["temperature"]),
-                )
-        thinking.empty()
-        vertical_space.empty()
+            upload_message = st.empty()
+
+            try:
+
+                def update_spinner_message(current, total):
+                    upload_message.write(f"Uploading documents in parallel... {current}/{total} completed.")
+
+                with st.spinner():
+                    file_keys = asyncio.run(
+                        upload_all_files_async(
+                            st.session_state["docs"], st.session_state["access_tkn"], update_spinner_message
+                        )
+                    )
+
+                with st.spinner(analyze_message):
+                    api.invoke_step_function(
+                        file_keys=file_keys,
+                        attributes=st.session_state["attributes"],
+                        instructions=st.session_state.get("instructions", ""),
+                        few_shots=st.session_state.get("few_shots", []),
+                        model_id=st.session_state["model_id"],
+                        parsing_mode=st.session_state["parsing_mode"],
+                        temperature=float(st.session_state["temperature"]),
+                    )
+            except Exception as e:
+                with error_container:
+                    error_message = str(e)
+                    if "does not support images" in error_message:
+                        st.error(
+                            "Error: The selected model does not support image processing. Please choose a different model.",
+                            icon="🚨",
+                        )
+                    else:
+                        st.error(f"Error: {error_message}", icon="🚨")
+            finally:
+                thinking.empty()
+                vertical_space.empty()
+
+    # Display final status
+    if not st.session_state.get("parsed_response"):
+        with error_container:
+            st.error("No results were generated. Please try again.", icon="🚨")
 
 
 #########################
