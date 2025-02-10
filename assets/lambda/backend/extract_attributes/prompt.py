@@ -5,8 +5,6 @@ File content:
     Prompting utils
 """
 
-from langchain import PromptTemplate
-
 PROMPT_DEFAULT_HEADER = """You are an AI assistant who is expert in extracting information from documents.
 Carefully read the document given below in <document></document> tags.
 Extract attributes listed below in <attributes></attributes> tags from the document.
@@ -92,9 +90,9 @@ PROMPT_INSTRUCTIONS = """You must follow these additional instructions:
 """
 
 
-def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> PromptTemplate:
+def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> tuple[str, list[str]]:
     """
-    Creates LangChain prompt template
+    Creates prompt template
 
     Parameters
     ----------
@@ -105,8 +103,8 @@ def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> Prom
 
     Returns
     -------
-    PromptTemplate
-        LangChain Prompt Template
+    tuple[str, list[str]]
+        Returns a tuple containing the prompt string and list of input variables
     """
 
     # prepare input variables
@@ -133,7 +131,4 @@ def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> Prom
     else:
         prompt = prompt.replace("\n<document_level_instructions_placeholder>\n", "\n")
 
-    return PromptTemplate(
-        template=prompt,
-        input_variables=input_variables,
-    )
+    return prompt, input_variables

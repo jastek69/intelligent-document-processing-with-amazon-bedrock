@@ -1,4 +1,9 @@
-from langchain import PromptTemplate
+"""
+Copyright © Amazon.com and Affiliates
+----------------------------------------------------------------------
+File content:
+    Prompting utils
+"""
 
 PROMPT_DEFAULT_HEADER = """Extract attributes from the attached images and remember to provide a valid JSON file in the following format:
 <json>
@@ -92,9 +97,9 @@ The document mentions the customer name in the email signature: Nikita Schulz. I
 """
 
 
-def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> PromptTemplate:
+def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> tuple[str, list[str]]:
     """
-    Creates LangChain prompt template
+    Creates prompt template
 
     Parameters
     ----------
@@ -105,8 +110,8 @@ def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> Prom
 
     Returns
     -------
-    PromptTemplate
-        LangChain Prompt Template
+    tuple[str, list[str]]
+        Returns a tuple containing the prompt string and list of input variables
     """
 
     # prepare input variables
@@ -133,7 +138,4 @@ def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> Prom
     else:
         prompt = prompt.replace("\n<document_level_instructions_placeholder>\n", "\n")
 
-    return PromptTemplate(
-        template=prompt,
-        input_variables=input_variables,
-    )
+    return prompt, input_variables

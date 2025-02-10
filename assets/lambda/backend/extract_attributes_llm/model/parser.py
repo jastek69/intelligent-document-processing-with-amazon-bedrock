@@ -29,3 +29,14 @@ def parse_json_string(text: str) -> dict:
     text = text.replace("{{", "{")
 
     return ast.literal_eval(text)
+
+
+def parse_bedrock_response(response: dict) -> str:
+    """
+    Parse Bedrock converse API output
+    """
+    replies = response["output"]["message"]["content"]
+    if not len(replies) == 1:
+        raise ValueError("Model has returned multiple or no content blocks in this response.")
+
+    return replies[0]["text"].strip()

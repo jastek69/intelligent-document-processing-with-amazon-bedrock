@@ -158,6 +158,8 @@ class IDPBedrockStack(Stack):
         ## ********** Authentication configs ***********
         mfa_enabled = config.get("authentication", {}).get("MFA", True)
         access_token_validity = config.get("authentication", {}).get("access_token_validity", 60)
+        cognito_users = config.get("authentication", {}).get("users", [])
+        cognito_users = [user for user in cognito_users if user != "XXX@XXX.com"]
 
         ## **************** API Constructs  ****************
         ## ******* Enable API Gateway logging *******
@@ -189,6 +191,7 @@ class IDPBedrockStack(Stack):
             hide_page_num_layout=hide_page_num_layout,
             use_table=use_table,
             mfa_enabled=mfa_enabled,
+            cognito_users=cognito_users,
             access_token_validity=access_token_validity,
             architecture=self._architecture,
             python_runtime=self._runtime,

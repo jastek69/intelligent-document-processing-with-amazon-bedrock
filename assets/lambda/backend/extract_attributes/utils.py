@@ -7,61 +7,40 @@ File content:
 
 import warnings
 
-from griptape.tokenizers import (
-    BedrockClaudeTokenizer,
-    BedrockCohereTokenizer,
-    BedrockJurassicTokenizer,
-    BedrockLlamaTokenizer,
-    BedrockTitanTokenizer,
-)
-
+from griptape.tokenizers import AmazonBedrockTokenizer
 
 def token_count_tokenizer(text: str, model: str) -> int:
-    """
-    Estimates the token count from the string
-
-    Parameters
-    ----------
-    text : str
-        the string part which needs to be tokenized
-    model
-        model id currently selected in app
-
-    Returns
-    -------
-    int
-        the estimated token count based on the model
-    """
-    if model.split(".")[0] == "anthropic":
-        tokenizer = BedrockClaudeTokenizer(model="anthropic.claude-")
-        token_count = tokenizer.count_tokens(text)
-
-    elif model.split(".")[0] == "mistral":
-        tokenizer = BedrockLlamaTokenizer(model="meta.llama2-13b-chat-v1")
-        token_count = tokenizer.count_tokens(text)
-
-    elif model.split(".")[0] == "amazon":
-        tokenizer = BedrockTitanTokenizer(model="amazon.titan-text-express-v1")
-        token_count = tokenizer.count_tokens(text)
-
-    elif model.split(".")[0] == "meta":
-        tokenizer = BedrockLlamaTokenizer(model="meta.llama2-13b-chat-v1")
-        token_count = tokenizer.count_tokens(text)
-
-    elif model.split(".")[0] == "cohere":
-        tokenizer = BedrockCohereTokenizer(model="cohere.command-r-v1:0")
-        token_count = tokenizer.count_tokens(text)
-
-    elif model.split(".")[0] == "ai21":
-        tokenizer = BedrockJurassicTokenizer(model="ai21.j2-ultra-v1")
-        token_count = tokenizer.count_tokens(text)
-
-    else:
-        warnings.warn("Currently we support tokenizers [anthropic, amazon, jurassic, meta, cohere, mistralai]")
-        tokenizer = BedrockClaudeTokenizer(model="anthropic.claude-")
-        token_count = tokenizer.count_tokens(text)
-        # raise NotImplementedError
+    tokenizer = AmazonBedrockTokenizer(model=model)
+    token_count = tokenizer.count_tokens(text)
     return token_count
+
+
+def get_max_input_token(model: str) -> int:
+    try:
+        if not isinstance(model, str):
+            raise ValueError("Model parameter must be a string")
+            
+        if not model:
+            raise ValueError("Model parameter cannot be empty")
+        
+        model = model.removeprefix("us.").removeprefix("eu.")
+            
+        tokenizer = AmazonBedrockTokenizer(model=model)
+        max_tokens = None
+        
+        for prefix in AmazonBedrockTokenizer.MODEL_PREFIXES_TO_MAX_INPUT_TOKENS:
+            if tokenizer.model.startswith(prefix):
+                max_tokens = AmazonBedrockTokenizer.MODEL_PREFIXES_TO_MAX_INPUT_TOKENS[prefix]
+                break
+                
+        if max_tokens is None:
+            raise ValueError(f"No matching token limit found for model: {model}")
+            
+        return max_tokens
+        
+    except Exception as e:
+        raise Exception(f"Error getting max input tokens: {str(e)}")
+
 
 
 def truncate_document(

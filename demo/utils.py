@@ -42,7 +42,7 @@ def run_idp_bedrock_api(
             type : str
                 Entity type. Must be one of: ["auto", "character", "number", "true/false"]
     parsing_mode : Optional[str]
-        Parsing mode to use, either "Amazon Textract" or "Amazon Bedrock"
+        Parsing mode to use, either "Amazon Textract" or "Amazon Bedrock LLM" or "Bedrock Data Automation"
     instructions : Optional[str]
         Optional high-level instructions, by default ""
     few_shots: Optional[Sequence[Dict[str, Any]]]

@@ -13,7 +13,7 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = ">3.9.5,<3.9.7 || >3.9.7,<3.14.0"
-boto3 = "~1.27.0"
+boto3 = "1.35.76"
 streamlit = "1.37.0"
 st-pages = "0.5.0"
 watchdog = "3.0.0"
@@ -23,4 +23,4 @@ python-dotenv = "1.0.1"
 rel = "0.4.9.5"
 pandas = "2.2.0"
 qrcode = "7.4.2"
-aiohttp = "^3.9.0"
+aiohttp = "3.11.12"

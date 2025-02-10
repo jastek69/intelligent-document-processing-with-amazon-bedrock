@@ -1,5 +1,4 @@
-langchain==0.2.5
-langchain-aws==0.1.7
 s3fs
-griptape==0.26.0
-anthropic==0.29.0
+griptape==1.2.1
+anthropic==0.43.1
+boto3>=1.35.76
