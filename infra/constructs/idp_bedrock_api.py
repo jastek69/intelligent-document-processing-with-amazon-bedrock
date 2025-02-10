@@ -10,7 +10,9 @@ import json
 import aws_cdk.aws_apigatewayv2 as _apigw
 import aws_cdk.aws_apigatewayv2_integrations as _integrations
 from aws_cdk import Aws, Duration, RemovalPolicy
+from aws_cdk import CfnOutput as output
 from aws_cdk import aws_cognito as cognito
+from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_lambda as _lambda
@@ -18,14 +20,9 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
 from aws_cdk import aws_stepfunctions as sfn
-from aws_cdk import aws_dynamodb as ddb
-from aws_cdk import CfnOutput as output
-
 from aws_cdk.aws_apigatewayv2_authorizers import HttpUserPoolAuthorizer
 from cdk_nag import NagPackSuppression, NagSuppressions
 from constructs import Construct
-from aws_cdk.aws_ecr_assets import Platform
-
 
 # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
 HTTP_API_SERVICE_ACCESS_LOGS_FORMATTER = {
@@ -71,6 +68,7 @@ class IDPBedrockAPIConstructs(Construct):
         use_table: bool = True,
         mfa_enabled: bool = True,
         access_token_validity: int = 60,
+        cognito_users: list[str] = [],
         s3_kms_key: kms.Key = None,
         **kwargs,
     ) -> None:
@@ -139,7 +137,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.documents_table_name = f"{stack_name}-documents"
         self.prefix = stack_name[:16]
         self.nag_suppressed_resources = []
-        self.create_cognito_user_pool(mfa_enabled, access_token_validity)
+        self.create_cognito_user_pool(mfa_enabled, access_token_validity, cognito_users)
 
         # Dependencies of the IDP Bedrock first-party code are included in idp_bedrock_deps layer (Lambda Powertools excluded)
         self.idp_bedrock_code_layers = [
@@ -227,7 +225,7 @@ class IDPBedrockAPIConstructs(Construct):
             retention=logs.RetentionDays.TWO_WEEKS,
         )
 
-    def create_cognito_user_pool(self, mfa_enabled: bool, access_token_validity: int):
+    def create_cognito_user_pool(self, mfa_enabled: bool, access_token_validity: int, cognito_users: list):
         # Cognito User Pool
         user_pool_common_config = {
             "id": f"{self.prefix}-user-pool",
@@ -243,6 +241,7 @@ class IDPBedrockAPIConstructs(Construct):
             ),
             "account_recovery": cognito.AccountRecovery.EMAIL_ONLY,
             "advanced_security_mode": cognito.AdvancedSecurityMode.ENFORCED,
+            "sign_in_aliases": cognito.SignInAliases(email=True),
         }
 
         if mfa_enabled:
@@ -253,43 +252,46 @@ class IDPBedrockAPIConstructs(Construct):
             self.user_pool = cognito.UserPool(self, **user_pool_common_config, **user_pool_mfa_config)
         else:
             self.user_pool = cognito.UserPool(self, **user_pool_common_config)
-            
+
         self.user_pool.add_domain(
             "CognitoDomain",
-            cognito_domain=cognito.CognitoDomainOptions(
-                domain_prefix=f"{self.prefix}-{Aws.ACCOUNT_ID}"
-            )
+            cognito_domain=cognito.CognitoDomainOptions(domain_prefix=f"{self.prefix}-{Aws.ACCOUNT_ID}"),
         )
-        
+
         self.user_pool_client = self.user_pool.add_client(
             "customer-app-client",
             user_pool_client_name=f"{self.prefix}-client",
             generate_secret=False,
             access_token_validity=Duration.minutes(access_token_validity),
-            auth_flows=cognito.AuthFlow(
-                user_password=True,
-                user_srp=True
-            ),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO], 
+            auth_flows=cognito.AuthFlow(user_password=True, user_srp=True),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(
-                    authorization_code_grant=True
-                ),
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
                 scopes=[
-                    cognito.OAuthScope.OPENID, 
-                    cognito.OAuthScope.EMAIL, 
+                    cognito.OAuthScope.OPENID,
+                    cognito.OAuthScope.EMAIL,
                     cognito.OAuthScope.PROFILE,
-                    cognito.OAuthScope.COGNITO_ADMIN
+                    cognito.OAuthScope.COGNITO_ADMIN,
                 ],
-                callback_urls=[
-                    "http://localhost:8501"
-                ],
-                logout_urls=[
-                    "http://localhost:8501"
-                ]
-            )
+                callback_urls=["http://localhost:8501"],
+                logout_urls=["http://localhost:8501"],
+            ),
         )
-        
+
+        # Add users to the pool
+        for email in cognito_users:
+            cognito.CfnUserPoolUser(
+                self,
+                f"CognitoUser-{email}",
+                user_pool_id=self.user_pool.user_pool_id,
+                username=email,
+                desired_delivery_mediums=["EMAIL"],
+                force_alias_creation=True,
+                user_attributes=[
+                    cognito.CfnUserPoolUser.AttributeTypeProperty(name="email", value=email),
+                    cognito.CfnUserPoolUser.AttributeTypeProperty(name="email_verified", value="true"),
+                ],
+            )
 
         # ********* Store COGNITO_DOMAIN in SSM Parameter Store *********
         cognito_domain = f"{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com"
@@ -298,10 +300,9 @@ class IDPBedrockAPIConstructs(Construct):
             f"{self.prefix}-SsmCognitoDomain",
             parameter_name=f"/{self.stack_name}/ecs/COGNITO_DOMAIN",
             string_value=cognito_domain,
-            description="Cognito domain for authentication"
+            description="Cognito domain for authentication",
         )
 
-        
         self.client_id = self.user_pool_client.user_pool_client_id
         self.user_pool_id = self.user_pool.user_pool_id
 
@@ -355,9 +356,32 @@ class IDPBedrockAPIConstructs(Construct):
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
         )
+        
+        ## ********* Run BDA *********
+        self.bda_lambda = _lambda.Function(
+            self,
+            f"{self.stack_name}-bda-lambda",
+            runtime=self._python_runtime,
+            architecture=self._architecture,
+            code=_lambda.Code.from_asset("./assets/lambda/backend/run_bedrock_automation"),
+            handler="run_bedrock_automation.lambda_handler",
+            function_name=f"{self.stack_name}-run-bda",
+            memory_size=3008,
+            timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
+            environment={
+                "BUCKET_NAME": self.s3_data_bucket.bucket_name,
+                "BEDROCK_REGION": self.bedrock_region,
+            },
+            role=self.lambda_attributes_role,
+            layers=self.idp_bedrock_code_layers,
+        )
+        self.bda_lambda.add_alias(
+            "Warm",
+            provisioned_concurrent_executions=0,
+            description="Alias used for Lambda provisioned concurrency",
+        )
 
-        ## ********* read_office files *********
-
+        ## ********* Read Office files *********
         self.read_office_lambda = _lambda.DockerImageFunction(
             self,
             f"{self.stack_name}-read_office-docker-lambda",
@@ -413,7 +437,7 @@ class IDPBedrockAPIConstructs(Construct):
             environment={
                 "FEW_SHOTS_TABLE_NAME": self.few_shots_table.table_name,
             },
-            role=self.lambda_retrive_examples_role,
+            role=self.lambda_retrieve_examples_role,
         )
         self.get_examples_list_lambda.add_alias(
             "Warm",
@@ -434,7 +458,7 @@ class IDPBedrockAPIConstructs(Construct):
             environment={
                 "FEW_SHOTS_TABLE_NAME": self.few_shots_table.table_name,
             },
-            role=self.lambda_retrive_examples_role,
+            role=self.lambda_retrieve_examples_role,
         )
         self.put_example_lambda.add_alias(
             "Warm",
@@ -521,7 +545,7 @@ class IDPBedrockAPIConstructs(Construct):
                 iam.ServicePrincipal("lambda.amazonaws.com"),
             ),
         )
-        self.lambda_retrive_examples_role = iam.Role(
+        self.lambda_retrieve_examples_role = iam.Role(
             self,
             f"{self.stack_name}-retrieve-examples-role",
             role_name=f"{self.stack_name}-retrieve-examples-role",
@@ -533,13 +557,10 @@ class IDPBedrockAPIConstructs(Construct):
         cloudwatch_access_docpolicy = iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(
-                    actions=[
-                        "logs:CreateLogStream",
-                        "logs:PutLogEvents"
-                    ],
+                    actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
                     resources=[
                         f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*:*",
-                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*"
+                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*",
                     ],
                 )
             ]
@@ -553,6 +574,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.lambda_presigned_url_role.attach_inline_policy(self.cloudwatch_access_policy)
         self.lambda_textract_role.attach_inline_policy(self.cloudwatch_access_policy)
         self.lambda_attributes_role.attach_inline_policy(self.cloudwatch_access_policy)
+        self.lambda_retrieve_examples_role.attach_inline_policy(self.cloudwatch_access_policy)
 
         # Added to suppressing list given Resource::arn:aws:logs:<AWS::Region>:<AWS::AccountId>:log-group:*
         self.nag_suppressed_resources.append(self.cloudwatch_access_policy)
@@ -582,7 +604,7 @@ class IDPBedrockAPIConstructs(Construct):
             document=ddb_docpolicy,
         )
         self.lambda_attributes_role.attach_inline_policy(ddb_policy)
-        self.lambda_retrive_examples_role.attach_inline_policy(ddb_policy)
+        self.lambda_retrieve_examples_role.attach_inline_policy(ddb_policy)
 
         ## ********* Textract *********
         textract_access_docpolicy = iam.PolicyDocument(
@@ -616,6 +638,11 @@ class IDPBedrockAPIConstructs(Construct):
                     actions=[
                         "bedrock:InvokeModel",
                         "bedrock:InvokeModelWithResponseStream",
+                        "bedrock:ListBlueprints",
+                        "bedrock:CreateBlueprint",
+                        "bedrock:UpdateBlueprint",
+                        "bedrock:InvokeDataAutomationAsync",
+                        "bedrock:GetDataAutomationStatus",
                     ],
                     resources=["*"],
                 )
@@ -696,6 +723,7 @@ class IDPBedrockAPIConstructs(Construct):
                         self.textract_lambda.function_arn,
                         self.read_office_lambda.function_arn,
                         self.llm_attributes_lambda.function_arn,
+                        self.bda_lambda.function_arn,
                     ],
                 )
             ]
@@ -715,9 +743,9 @@ class IDPBedrockAPIConstructs(Construct):
         log_group = logs.LogGroup(
             self,
             f"{self.stack_name}/StepFunctions",
-            log_group_name=f"/aws/vendedlogs/states/{self.stack_name}/stepfunctions",  
-            removal_policy=RemovalPolicy.DESTROY,  
-            retention=logs.RetentionDays.TWO_WEEKS,  
+            log_group_name=f"/aws/vendedlogs/states/{self.stack_name}/stepfunctions",
+            removal_policy=RemovalPolicy.DESTROY,
+            retention=logs.RetentionDays.TWO_WEEKS,
         )
 
         self.idp_bedrock_state_machine = sfn.StateMachine(
@@ -727,6 +755,7 @@ class IDPBedrockAPIConstructs(Construct):
             definition_substitutions={
                 "LAMBDA_READ_OFFICE": self.read_office_lambda.function_arn,
                 "LAMBDA_RUN_TEXTRACT": self.textract_lambda.function_arn,
+                "LAMBDA_RUN_BDA": self.bda_lambda.function_arn,
                 "LAMBDA_EXTRACT_ATTRIBUTES": self.attributes_lambda.function_arn,
                 "LAMBDA_EXTRACT_ATTRIBUTES_LLM": self.llm_attributes_lambda.function_arn,
             },

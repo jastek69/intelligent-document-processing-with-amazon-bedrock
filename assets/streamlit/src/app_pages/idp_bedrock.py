@@ -2,7 +2,7 @@
 Copyright © Amazon.com and Affiliates
 ----------------------------------------------------------------------
 File content:
-    Streamlit Frontend
+    Streamlit frontend
 """
 
 #########################
@@ -55,9 +55,10 @@ from components.constants import (
     OFFICE_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
+    TEMPERATURE_DEFAULT,
 )
 from components.frontend import show_empty_container, show_footer
-from components.model import get_models_specs
+from components.model import get_model_names
 from components.s3 import create_presigned_url
 from components.styling import set_page_styling
 from st_pages import add_indentation, show_pages_from_config
@@ -124,7 +125,7 @@ if not st.session_state["authenticated"]:
 #########################
 
 BEDROCK_MODEL_IDS = json.loads(os.environ.get("BEDROCK_MODEL_IDS"))
-MODELS_DISPLAYED, MODEL_SPECS = get_models_specs(BEDROCK_MODEL_IDS)
+MODEL_SPECS = get_model_names(BEDROCK_MODEL_IDS)
 
 RUN_EXTRACTION = False
 
@@ -134,7 +135,6 @@ RUN_EXTRACTION = False
 #########################
 
 st.session_state.setdefault("authenticated", "False")
-st.session_state.setdefault("ai_model", MODELS_DISPLAYED[0])
 st.session_state.setdefault("parsed_response", [])
 st.session_state.setdefault("raw_response", [])
 st.session_state.setdefault("texts", [])
@@ -379,7 +379,8 @@ def run_extraction() -> None:
 
     st.session_state["parsed_response"] = []
     st.session_state["raw_response"] = []
-    st.session_state["model_id"] = MODEL_SPECS[st.session_state["ai_model"]]["MODEL_ID"]
+    st.session_state["model_id"] = MODEL_SPECS[st.session_state["ai_model"]]
+    LOGGER.info(f"Model ID: {st.session_state['model_id']}")
 
     if len(st.session_state["docs"]) > 1:
         analyze_message = "Analyzing documents in parallel..."
@@ -448,20 +449,22 @@ with st.sidebar:
     st.subheader("Information Extraction")
     st.selectbox(
         label="Parsing algorithm:",
-        options=["Amazon Bedrock", "Amazon Textract"],
+        options=["Bedrock Data Automation", "Amazon Bedrock LLM", "Amazon Textract"],
         key="parsing_mode",
     )
     st.selectbox(
         label="Language model:",
-        options=MODELS_DISPLAYED,
+        options=list(MODEL_SPECS.keys()),
         key="ai_model",
+        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
     )
     st.slider(
         label="Temperature:",
-        value=MODEL_SPECS[st.session_state["ai_model"]]["TEMPERATURE_DEFAULT"],
+        value=TEMPERATURE_DEFAULT,
         min_value=0.0,
         max_value=1.0,
         key="temperature",
+        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
     )
     st.markdown("")
     st.subheader("Additional Inputs")
@@ -469,6 +472,7 @@ with st.sidebar:
         label="Enable advanced mode",
         key="advanced_mode",
         help="Allows adding document-level instructions and few-shot examples to improve extraction accuracy",
+        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
     )
     st.markdown("")
     st.subheader("Output Format")
@@ -526,23 +530,22 @@ with tab_docs:
         options=["Upload documents", "Enter texts manually"],
     )
     if st.session_state["docs_input_type"] == "Upload documents":
-        if st.session_state["parsing_mode"] == "Amazon Bedrock":
-            st.warning(
-                f"Parsing with Amazon Bedrock currently only supports Claude LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files."
-            )
+        if st.session_state["parsing_mode"] == "Bedrock Data Automation":
+            st.warning("Parsing with Bedrock Data Automation only supports PDF files.")
+        if st.session_state["parsing_mode"] == "Amazon Bedrock LLM":
+            st.warning(f"Parsing with Amazon Bedrock only supports selected Claude and Nova LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files.")
         files = st.file_uploader(
             label="Upload your document(s):",
             accept_multiple_files=True,
             key=f"{st.session_state['docs_uploader_key']}",
-            type=SUPPORTED_EXTENSIONS
-            if st.session_state["parsing_mode"] != "Amazon Bedrock"
-            else SUPPORTED_EXTENSIONS_BEDROCK,
+            type=["pdf"] if st.session_state["parsing_mode"] == "Bedrock Data Automation"
+            else SUPPORTED_EXTENSIONS_BEDROCK
+            if st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
+            else SUPPORTED_EXTENSIONS,
         )
         for file in files:
             if any([file.name.endswith(i) for i in OFFICE_EXTENSIONS]):
-                st.info(
-                    "ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information."
-                )
+                st.info("ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information.")
             break
         st.session_state["docs"] = files[::-1]
     else:
@@ -648,7 +651,7 @@ else:
 
 # examples
 if st.session_state["advanced_mode"]:
-    multimodal_on = st.session_state["parsing_mode"] == "Amazon Bedrock"
+    multimodal_on = st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
     with tab_few_shots:
         if not multimodal_on:
             st.radio(
@@ -721,7 +724,7 @@ if st.session_state["advanced_mode"]:
 
             if few_shots is not None:
                 if multimodal_on:
-                    # in case of multimodal only file upload is avaliable
+                    # in case of multimodal only file upload is available
                     st.session_state["few_shots"] = {"documents": file_keys_few_shots, "markings": file_key_markings}
                     st.session_state["num_few_shots"] = len(st.session_state["few_shots"]["documents"])
                 else:
@@ -837,11 +840,14 @@ if st.session_state.get("raw_response"):
 
             st.markdown(f"##### {idx+1}. {file_name}")
             st.markdown("**Document**")
-            st.markdown(
-                f"""
+            if st.session_state["parsing_mode"] != "Bedrock Data Automation":
+                st.markdown(
+                    f"""
 - [Original document]({url_original})
 - [Processed document]({url_processed})"""
-            )
+                )
+            else:
+                st.markdown(f"""[Original document]({url_original})""")
             st.markdown("")
             st.markdown("**Explanation**")
             st.warning(raw_response.split("<thinking>", 1)[-1].split("</thinking>", 1)[0])

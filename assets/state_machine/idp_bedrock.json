@@ -33,7 +33,7 @@
                   },
                   {
                     "Variable": "$.parsing_mode",
-                    "StringEquals": "Amazon Bedrock"
+                    "StringEquals": "Amazon Bedrock LLM"
                   }
                 ],
                 "Next": "Extract-entities-multimodal"
@@ -82,6 +82,15 @@
                   }
                 ],
                 "Next": "Convert-office"
+              },
+              {
+                "And": [
+                  {
+                    "Variable": "$.parsing_mode",
+                    "StringEquals": "Bedrock Data Automation"
+                  }
+                ],
+                "Next": "Run-BDA"
               }
             ],
             "Default": "Extract-text"
@@ -150,6 +159,52 @@
                 "body.$": "$"
               },
               "FunctionName": "${LAMBDA_EXTRACT_ATTRIBUTES}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "BackoffRate": 2,
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "ResultSelector": {
+              "llm_answer.$": "States.StringToJson($.Payload.body)"
+            },
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Comment": "Catch Lambda failed execution",
+                "ResultPath": "$.error",
+                "Next": "Pass"
+              }
+            ],
+            "End": true
+          },
+          "Run-BDA": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_RUN_BDA}"
             },
             "Retry": [
               {

@@ -103,7 +103,7 @@ source .venv/bin/activate
 
 ### 4. Configure the Stack
 
-Open and modify the `config.yml` file to specify your project name and modules you would like to deploy (e.g., whether to deploy a UI).
+Copy the `config-example.yml` to a `config.yml` file and specify your project name and modules you would like to deploy (e.g., whether to deploy a UI).
 
 ```yaml
 stack_name: idp-bedrock-stack   # Name of your demo, will be used as stack name and prefix for resources
@@ -185,9 +185,15 @@ Follow steps in this [notebook](demo/idp_bedrock_demo.ipynb) to run a job via an
 
 ### Add Cognito Users
 
-- Open the Cognito Console, choose the created user pool, and click create user
+From the console:
+- Open the Amazon Cognito Console in the AWS console
+- Choose the created user pool, navigate to users, and click "create user"
 - Provide the user name and a temporary password or email address for auto-generated password
     - Users will be able to log into the frontend using Cognito credentials
+
+As part of the code:
+- Add a list of Cognito user emails in `config.yml` in the authentication section
+- Each of the users will receive a temporary password from no-reply@verificationemail.com
 
 ### Access the Frontend
 
@@ -203,8 +209,7 @@ or
 You can run the Streamlit frontend locally for testing and development by following these steps:
 
 - Deploy the CDK stack once
-- In ```assets/streamlit/.env```, set ```STACK_NAME``` to the stack name you used. Setting the other environment variables is optional. By default those values will be read from AWS Systems Manager Parameter Store. If you wish to override those variables for local testing, you can set them in the ```assets/streamlit/.env``` file.
-  - Including Cognito client ID, API endpoint url, region, and S3 bucket name
+- Copy ```assets/streamlit/.env.example``` to ```assets/streamlit/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
 - Provide AWS credentials
   - You can add AWS credentials to the ```assets/streamlit/.env``` file 
   - Or simply export credentials in your terminal, e.g. ```export AWS_PROFILE=<profile>```
@@ -233,9 +238,9 @@ The following diagram illustrates the high-level architecture of this solution:
 
 **Contributors:**
 
-![image](team/romain.jpeg) | ![image](team/zainab.jpeg) | ![image](team/egor.jpeg) | ![image](team/huong.jpeg) | ![image](team/aiham.jpeg) |![image](team/elizaveta.jpeg) | ![image](team/babs.jpeg) |
-|---|---|---|---|---|---|---|
-[Romain Besombes](https://www.linkedin.com/in/romainbesombes/) | [Zainab Afolabi](https://www.linkedin.com/in/zainabafolabi/) | [Egor Krasheninnikov](https://www.linkedin.com/in/egorkrash/) | [Huong Vu](https://www.linkedin.com/in/huong-vu/) | [Aiham Taleb](https://www.linkedin.com/in/aihamtaleb/) | [Elizaveta Zinovyeva](https://www.linkedin.com/in/zinov-liza/) | [Babs Khalidson](https://www.linkedin.com/in/babskhalidson/) |
+| ![image](team/romain.jpeg) | ![image](team/zainab.jpeg) | ![image](team/egor.jpeg) | ![image](team/huong.jpeg) | ![image](team/aiham.jpeg) | ![image](team/elizaveta.jpeg) | ![image](team/babs.jpeg) | ![image](team/ennio.jpeg) |
+|---|---|---|---|---|---|---|---|
+| [Romain Besombes](https://www.linkedin.com/in/romainbesombes/) | [Zainab Afolabi](https://www.linkedin.com/in/zainabafolabi/) | [Egor Krasheninnikov](https://www.linkedin.com/in/egorkrash/) | [Huong Vu](https://www.linkedin.com/in/huong-vu/) | [Aiham Taleb](https://www.linkedin.com/in/aihamtaleb/) | [Elizaveta Zinovyeva](https://www.linkedin.com/in/zinov-liza/) | [Babs Khalidson](https://www.linkedin.com/in/babskhalidson/) | [Ennio Pastore](https://www.linkedin.com/in/enniopastore/) |
 
 **Acknowledgements:**
 
