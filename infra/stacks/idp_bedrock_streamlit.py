@@ -6,11 +6,14 @@ File content:
 """
 
 import os
+import json
 from pathlib import Path
 
+from aws_cdk import Duration 
 from aws_cdk import Aws, NestedStack, RemovalPolicy, Tags
 from aws_cdk import CfnOutput as output
 from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk.aws_cloudfront import FunctionEventType
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_elasticloadbalancingv2 as elbv2
@@ -18,11 +21,11 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
+# from aws_cdk import custom_resources as cr
 from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk.aws_ecr_assets import DockerImageAsset
 from cdk_nag import NagPackSuppression, NagSuppressions
 from constructs import Construct
-
 
 class CloudWatchLogGroup(Construct):
     ALLOWED_WRITE_ACTIONS = [
@@ -84,6 +87,7 @@ class IDPBedrockStreamlitStack(NestedStack):
         ecs_cpu: int = 512,
         ecs_memory: int = 1024,
         ssm_client_id=None,
+        ssm_cognito_domain=None,
         ssm_user_pool_id: ssm.StringParameter = None,
         ssm_region: ssm.StringParameter = None,
         ssm_api_uri=None,
@@ -116,6 +120,8 @@ class IDPBedrockStreamlitStack(NestedStack):
         self.ssm_assistant_avatar_url = ssm_assistant_avatar_url
         self.ssm_state_machine_arn = ssm_state_machine_arn
         self.state_machine_name = state_machine_name
+        self.ssm_cognito_domain = ssm_cognito_domain
+        
 
         self.docker_asset = self.build_docker_push_ecr()
 
@@ -162,7 +168,7 @@ class IDPBedrockStreamlitStack(NestedStack):
             # asset_name = f"{prefix}-streamlit-img",
             directory=os.path.join(Path(__file__).parent.parent.parent, "assets/streamlit"),
         )
-
+    
     def create_webapp_vpc(self, open_to_public_internet=False):
         # VPC for ALB and ECS cluster
         vpc = ec2.Vpc(
@@ -222,6 +228,33 @@ class IDPBedrockStreamlitStack(NestedStack):
             connection=ec2.Port.tcp(8501),
             description="ALB traffic",
         )
+        
+        
+        # Add rule to allow traffic from CloudFront to ALB
+        self.alb_security_group.add_ingress_rule(
+            peer=ec2.Peer.ipv4('130.176.0.0/16'),  # CloudFront IP range
+            connection=ec2.Port.tcp(80),
+            description='Allow CloudFront traffic'
+        )
+
+        # Add other CloudFront IP ranges
+        for ip_range in [
+            '15.158.0.0/16',
+            '130.176.0.0/16',
+            '15.188.0.0/16',
+            '130.176.0.0/16',
+            '108.156.0.0/14',
+            '120.52.0.0/16',
+            '205.251.208.0/20',
+            '180.163.57.0/24',
+            '204.246.164.0/22',
+            '54.192.0.0/16',
+        ]:
+            self.alb_security_group.add_ingress_rule(
+                peer=ec2.Peer.ipv4(ip_range),
+                connection=ec2.Port.tcp(80),
+                description=f'Allow CloudFront traffic from {ip_range}'
+            )
 
         return vpc
 
@@ -262,6 +295,7 @@ class IDPBedrockStreamlitStack(NestedStack):
 
         service_logs_prefix = f"load-balancers/{load_balancer_name}"
         # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-elasticloadbalancingv2-loadbalancer-loadbalancerattribute.html
+
         alb.log_access_logs(bucket=self.s3_logs_bucket, prefix=service_logs_prefix)
 
         self.resource_prefix = f"{self.prefix}-frontend-container"
@@ -313,7 +347,8 @@ class IDPBedrockStreamlitStack(NestedStack):
             statements=[
                 iam.PolicyStatement(
                     actions=["s3:GetObject*", "s3:GetBucket*", "s3:List*", "s3:PutObject*", "s3:DeleteObject*"],
-                    resources=[self.s3_data_bucket.bucket_arn, self.s3_data_bucket.bucket_arn + "/*"],
+                    resources=[self.s3_data_bucket.bucket_arn, 
+                               self.s3_data_bucket.bucket_arn + "/*"],
                     effect=iam.Effect.ALLOW,
                 ),
             ]
@@ -325,48 +360,23 @@ class IDPBedrockStreamlitStack(NestedStack):
             document=s3_docpolicy,
         )
         task_execution_role.attach_inline_policy(s3_policy)
+        
+        task_execution_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["s3:GetObject", "s3:ListBucket"],
+                resources=[
+                    self.s3_data_bucket.bucket_arn,
+                    f"{self.s3_data_bucket.bucket_arn}/*"
+                ]
+            )
+        )
 
         ecs_log_driver = ecs.LogDrivers.aws_logs(
             stream_prefix="AwsLogsLogDriver", log_group=log_group.log_group
         )  # Full log stream name: [PREFIX]/[CONTAINER-NAME]/[ECS-TASK-ID]
 
-        fargate_task_definition = ecs.FargateTaskDefinition(
-            self,
-            "WebappTaskDef",
-            memory_limit_mib=self.ecs_memory,
-            cpu=self.ecs_cpu,
-            execution_role=task_execution_role,
-            task_role=task_execution_role,
-        )
 
-        fargate_task_definition.add_container(
-            "StreamlitAppContainer",
-            # Use an image from DockerHub
-            image=ecs.ContainerImage.from_docker_image_asset(self.docker_asset),
-            port_mappings=[ecs.PortMapping(container_port=8501, protocol=ecs.Protocol.TCP)],
-            secrets={
-                "CLIENT_ID": ecs.Secret.from_ssm_parameter(self.ssm_client_id),
-                "USER_POOL_ID": ecs.Secret.from_ssm_parameter(self.ssm_user_pool_id),
-                "REGION": ecs.Secret.from_ssm_parameter(self.ssm_region),
-                "API_URI": ecs.Secret.from_ssm_parameter(self.ssm_api_uri),
-                "BUCKET_NAME": ecs.Secret.from_ssm_parameter(self.ssm_bucket_name),
-                "COVER_IMAGE_URL": ecs.Secret.from_ssm_parameter(self.ssm_cover_image_url),
-                "ASSISTANT_AVATAR_URL": ecs.Secret.from_ssm_parameter(self.ssm_assistant_avatar_url),
-                "BEDROCK_MODEL_IDS": ecs.Secret.from_ssm_parameter(self.ssm_bedrock_model_ids),
-                "STATE_MACHINE_ARN": ecs.Secret.from_ssm_parameter(self.ssm_state_machine_arn),
-            },
-            logging=ecs_log_driver,
-        )
 
-        service = ecs.FargateService(
-            self,
-            "StreamlitECSService",
-            cluster=cluster,
-            task_definition=fargate_task_definition,
-            service_name=f"{self.prefix}-stl-front",
-            security_groups=[self.ecs_security_group],
-            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-        )
 
         # TODO add WAF support
         # ********* WAF *********
@@ -410,56 +420,206 @@ class IDPBedrockStreamlitStack(NestedStack):
 
         # ********* Cloudfront distribution *********
 
-        # Add ALB as CloudFront Origin
-        origin = LoadBalancerV2Origin(
-            alb,
-            custom_headers={self.custom_header_name: self.custom_header_value},
-            origin_shield_enabled=False,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
-        )
+        # Update the CloudFront function to rewrite /oauth2/idpresponse to /
+        # Update the CloudFront function to properly handle /oauth2/idpresponse and pass the code to Streamlit
+        function = cloudfront.Function(
+            self,
+            "RedirectFunction",
+            code=cloudfront.FunctionCode.from_inline(f"""
+            function handler(event) {{
+                var request = event.request;
+                var uri = request.uri;
 
+                // If this is the callback endpoint with a code, redirect to root
+                if (uri.startsWith('/oauth2/idpresponse') && request.querystring.code) {{
+                    return {{
+                        statusCode: 302,
+                        statusDescription: 'Found',
+                        headers: {{
+                            'location': {{ 
+                                value: '/?code=' + request.querystring.code.value
+                            }},
+                            'cache-control': {{
+                                value: 'no-cache, no-store, must-revalidate'
+                            }}
+                        }}
+                    }};
+                }}
+
+                // If the request is to '/' and has a code, allow it to pass through
+                if (uri === '/' && request.querystring.code) {{
+                    return request;
+                }}
+
+                // Allow specific resource paths to pass through regardless of query parameters
+                var allowed_paths = [
+                    '/static/',
+                    '/_stcore/',
+                    '/favicon.ico',
+                    '/robots.txt'
+                    // Add more paths as needed
+                ];
+
+                for (var i = 0; i < allowed_paths.length; i++) {{
+                    if (uri.startsWith(allowed_paths[i])) {{
+                        return request;
+                    }}
+                }}
+
+                // If no code, redirect to Cognito
+                if (!uri.startsWith('/oauth2/')) {{
+                    var cognitoUrl = 'https://{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com/oauth2/authorize';
+                    cognitoUrl += '?client_id={self.ssm_client_id.string_value}';
+                    cognitoUrl += '&response_type=code';
+                    cognitoUrl += '&scope=openid+profile+email';
+                    cognitoUrl += '&redirect_uri=https://' + request.headers.host.value + '/oauth2/idpresponse';
+
+                    return {{
+                        statusCode: 302,
+                        statusDescription: 'Found',
+                        headers: {{
+                            'location': {{ value: cognitoUrl }},
+                            'cache-control': {{ value: 'no-cache, no-store, must-revalidate' }}
+                        }}
+                    }};
+                }}
+
+                return request;
+            }}
+            """)
+        )
+        
+        
+        # Create the CloudFront distribution with redirect behavior
         distribution_name = f"{self.prefix}-cf-dist"
         cloudfront_distribution = cloudfront.Distribution(
             self,
             distribution_name,
             comment=self.prefix,
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origin,
+                origin=LoadBalancerV2Origin(
+                    alb,
+                    custom_headers={self.custom_header_name: self.custom_header_value},
+                    protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                    http_port=80,
+                    connection_attempts=3,
+                    connection_timeout=Duration.seconds(10),
+                ),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
+                function_associations=[
+                    cloudfront.FunctionAssociation(
+                        function=function,
+                        event_type=FunctionEventType.VIEWER_REQUEST
+                    )
+                ]
             ),
             enable_logging=True,
             log_bucket=self.s3_logs_bucket,
             log_file_prefix=f"distributions/{distribution_name}",
+            # default_root_object="oauth2/authorize",
+        ) 
+        
+
+        
+        self.ssm_cloudfront_domain = ssm.StringParameter(
+            self,
+            f"{self.prefix}-SsmCloudFront",
+            parameter_name=f"/{self.prefix}/ecs/CLOUDFRONT_DOMAIN",
+            string_value=f"{cloudfront_distribution.domain_name}"
+        )
+        
+        
+        # Create Fargate task definition AFTER creating SSM parameters
+        fargate_task_definition = ecs.FargateTaskDefinition(
+            self,
+            "WebappTaskDef",
+            memory_limit_mib=self.ecs_memory,
+            cpu=self.ecs_cpu,
+            execution_role=task_execution_role,
+            task_role=task_execution_role,
+        )
+        
+        # Add container with the secrets
+        fargate_task_definition.add_container(
+            "StreamlitAppContainer",
+            image=ecs.ContainerImage.from_docker_image_asset(self.docker_asset),
+            port_mappings=[ecs.PortMapping(container_port=8501, protocol=ecs.Protocol.TCP)],
+            secrets={
+                "CLIENT_ID": ecs.Secret.from_ssm_parameter(self.ssm_client_id),
+                "USER_POOL_ID": ecs.Secret.from_ssm_parameter(self.ssm_user_pool_id),
+                "REGION": ecs.Secret.from_ssm_parameter(self.ssm_region),
+                "API_URI": ecs.Secret.from_ssm_parameter(self.ssm_api_uri),
+                "BUCKET_NAME": ecs.Secret.from_ssm_parameter(self.ssm_bucket_name),
+                "COVER_IMAGE_URL": ecs.Secret.from_ssm_parameter(self.ssm_cover_image_url),
+                "ASSISTANT_AVATAR_URL": ecs.Secret.from_ssm_parameter(self.ssm_assistant_avatar_url),
+                "BEDROCK_MODEL_IDS": ecs.Secret.from_ssm_parameter(self.ssm_bedrock_model_ids),
+                "STATE_MACHINE_ARN": ecs.Secret.from_ssm_parameter(self.ssm_state_machine_arn),
+                "COGNITO_DOMAIN": ecs.Secret.from_ssm_parameter(self.ssm_cognito_domain),
+                "CLOUDFRONT_DOMAIN": ecs.Secret.from_ssm_parameter(self.ssm_cloudfront_domain) 
+            },
+            logging=ecs_log_driver,
         )
 
+        service = ecs.FargateService(
+            self,
+            "StreamlitECSService",
+            cluster=cluster,
+            task_definition=fargate_task_definition,
+            service_name=f"{self.prefix}-stl-front",
+            security_groups=[self.ecs_security_group],
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+        )
+        
         # ********* ALB Listener *********
 
         http_listener = alb.add_listener(
             f"{self.prefix}-http-listener{alb_suffix}",
             port=80,
-            open=not (bool(self.ip_address_allowed)),
-        )
-
-        http_listener.add_targets(
-            f"{self.prefix}-tg{alb_suffix}",
-            target_group_name=f"{self.prefix}-tg{alb_suffix}",
-            port=8501,
-            priority=1,
-            conditions=[elbv2.ListenerCondition.http_header(self.custom_header_name, [self.custom_header_value])],
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[service],
-        )
-        # add a default action to the listener that will deny all requests that do not have the custom header
-        http_listener.add_action(
-            "default-action",
-            action=elbv2.ListenerAction.fixed_response(
+            default_action=elbv2.ListenerAction.fixed_response(
                 status_code=403,
                 content_type="text/plain",
-                message_body="Access denied",
-            ),
+                message_body="Access denied"
+            ),  # Default deny all traffic
         )
+
+        # Add target group with custom header validation
+        http_listener.add_action(
+            "allow-cloudfront",
+            conditions=[
+                elbv2.ListenerCondition.http_header(
+                    self.custom_header_name, 
+                    [self.custom_header_value]
+                )
+            ],
+            priority=1,
+            action=elbv2.ListenerAction.forward(
+                target_groups=[
+                    elbv2.ApplicationTargetGroup(  # Modify this target group configuration
+                        self,
+                        f"{self.prefix}-tg{alb_suffix}",
+                        vpc=self.vpc,
+                        port=8501,
+                        protocol=elbv2.ApplicationProtocol.HTTP,
+                        targets=[service],
+                        target_group_name=f"{self.prefix}-tg{alb_suffix}",
+                        health_check={  # Add this health check configuration
+                            'path': '/_stcore/health',
+                            'port': '8501',
+                            'protocol': elbv2.Protocol.HTTP,
+                            'interval': Duration.seconds(30),
+                            'timeout': Duration.seconds(5),
+                            'healthy_threshold_count': 2,
+                            'unhealthy_threshold_count': 5,
+                        }
+                    )
+                ]
+            )
+        )
+
+
+
 
         return cluster, alb, cloudfront_distribution
