@@ -24,6 +24,8 @@ from aws_cdk import CfnOutput as output
 from aws_cdk.aws_apigatewayv2_authorizers import HttpUserPoolAuthorizer
 from cdk_nag import NagPackSuppression, NagSuppressions
 from constructs import Construct
+from aws_cdk.aws_ecr_assets import Platform
+
 
 # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html#context-variable-reference
 HTTP_API_SERVICE_ACCESS_LOGS_FORMATTER = {
@@ -72,6 +74,51 @@ class IDPBedrockAPIConstructs(Construct):
         s3_kms_key: kms.Key = None,
         **kwargs,
     ) -> None:
+        """
+        Initialize the IDP Bedrock API constructs
+
+        Parameters
+        ----------
+        scope : Construct
+            The scope of the construct
+        construct_id : str
+            The ID of the construct
+        stack_name : str
+            The name of the stack
+        s3_data_bucket : _s3.Bucket
+            The S3 bucket for storing data
+        layers : Construct
+            The layers for the construct
+        bedrock_region : str
+            The region for the Bedrock API
+        textract_region : str
+            The region for the Textract API
+        architecture : _lambda.Architecture
+            The architecture for the Lambda functions
+        python_runtime : _lambda.Runtime
+            The runtime for the Lambda functions
+        table_flatten_headers : bool
+            Whether to flatten headers in tables
+        table_remove_column_headers : bool
+            Whether to remove column headers in tables
+        table_duplicate_text_in_merged_cells : bool
+            Whether to duplicate text in merged cells in tables
+        hide_footer_layout : bool
+            Whether to hide footer layout
+        hide_header_layout : bool
+            Whether to hide header layout
+        hide_page_num_layout : bool
+            Whether to hide page number layout
+        use_table : bool
+            Whether to use tables
+        mfa_enabled : bool
+            Whether to enable MFA
+        access_token_validity : int
+            The validity of the access token
+        s3_kms_key : kms.Key
+            The KMS key for the S3 bucket
+        """
+
         super().__init__(scope, construct_id, **kwargs)
 
         self.s3_data_bucket = s3_data_bucket
@@ -175,7 +222,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.log_group = logs.LogGroup(
             self,
             f"{self.stack_name}-http-api-log-group",
-            log_group_name=f"/{self.stack_name}/apigw/{api_id}",
+            log_group_name=f"/aws/vendedlogs/apigateway/{self.stack_name}/{api_id}",  # Use vendedlogs prefix
             removal_policy=RemovalPolicy.DESTROY,
             retention=logs.RetentionDays.TWO_WEEKS,
         )
@@ -206,15 +253,55 @@ class IDPBedrockAPIConstructs(Construct):
             self.user_pool = cognito.UserPool(self, **user_pool_common_config, **user_pool_mfa_config)
         else:
             self.user_pool = cognito.UserPool(self, **user_pool_common_config)
-
+            
+        self.user_pool.add_domain(
+            "CognitoDomain",
+            cognito_domain=cognito.CognitoDomainOptions(
+                domain_prefix=f"{self.prefix}-{Aws.ACCOUNT_ID}"
+            )
+        )
+        
         self.user_pool_client = self.user_pool.add_client(
             "customer-app-client",
             user_pool_client_name=f"{self.prefix}-client",
             generate_secret=False,
             access_token_validity=Duration.minutes(access_token_validity),
-            auth_flows=cognito.AuthFlow(user_password=True, user_srp=True),
+            auth_flows=cognito.AuthFlow(
+                user_password=True,
+                user_srp=True
+            ),
+            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO], 
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(
+                    authorization_code_grant=True
+                ),
+                scopes=[
+                    cognito.OAuthScope.OPENID, 
+                    cognito.OAuthScope.EMAIL, 
+                    cognito.OAuthScope.PROFILE,
+                    cognito.OAuthScope.COGNITO_ADMIN
+                ],
+                callback_urls=[
+                    "http://localhost:8501"
+                ],
+                logout_urls=[
+                    "http://localhost:8501"
+                ]
+            )
+        )
+        
+
+        # ********* Store COGNITO_DOMAIN in SSM Parameter Store *********
+        cognito_domain = f"{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com"
+        self.ssm_cognito_domain = ssm.StringParameter(
+            self,
+            f"{self.prefix}-SsmCognitoDomain",
+            parameter_name=f"/{self.stack_name}/ecs/COGNITO_DOMAIN",
+            string_value=cognito_domain,
+            description="Cognito domain for authentication"
         )
 
+        
         self.client_id = self.user_pool_client.user_pool_client_id
         self.user_pool_id = self.user_pool.user_pool_id
 
@@ -447,13 +534,13 @@ class IDPBedrockAPIConstructs(Construct):
             statements=[
                 iam.PolicyStatement(
                     actions=[
-                        "logs:CreateLogGroup",
                         "logs:CreateLogStream",
-                        "logs:PutLogEvents",
-                        "logs:DescribeLogStreams",
-                        "logs:PutSubscriptionFilter",
+                        "logs:PutLogEvents"
                     ],
-                    resources=[f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:*"],
+                    resources=[
+                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*:*",
+                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*"
+                    ],
                 )
             ]
         )
@@ -624,7 +711,15 @@ class IDPBedrockAPIConstructs(Construct):
 
     ## **************** Step Functions ****************
     def create_stepfunctions(self):
-        log_group = logs.LogGroup(self, f"{self.stack_name}/StepFunctions")
+        # Update log group with vendedlogs prefix
+        log_group = logs.LogGroup(
+            self,
+            f"{self.stack_name}/StepFunctions",
+            log_group_name=f"/aws/vendedlogs/states/{self.stack_name}/stepfunctions",  
+            removal_policy=RemovalPolicy.DESTROY,  
+            retention=logs.RetentionDays.TWO_WEEKS,  
+        )
+
         self.idp_bedrock_state_machine = sfn.StateMachine(
             scope=self,
             id=f"{self.stack_name}-StepFunctions",
