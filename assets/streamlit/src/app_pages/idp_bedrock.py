@@ -75,7 +75,8 @@ authenticate.set_st_state_vars()
 #########################
 
 # titles
-COVER_IMAGE = os.environ.get("COVER_IMAGE_URL")
+COVER_IMAGE_URL = os.environ.get("COVER_IMAGE_URL")
+COVER_IMAGE = create_presigned_url(COVER_IMAGE_URL)
 ASSISTANT_AVATAR = os.environ.get("ASSISTANT_AVATAR_URL")
 PAGE_TITLE = "IDP Bedrock"
 PAGE_ICON = ":sparkles:"
@@ -447,7 +448,7 @@ with st.sidebar:
     st.subheader("Information Extraction")
     st.selectbox(
         label="Parsing algorithm:",
-        options=["Amazon Textract", "Amazon Bedrock"],
+        options=["Amazon Bedrock", "Amazon Textract"],
         key="parsing_mode",
     )
     st.selectbox(

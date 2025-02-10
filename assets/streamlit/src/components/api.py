@@ -7,11 +7,18 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import sys
 import time
+import logging
 
 import aiohttp
 import boto3
 import streamlit as st
+
+LOGGER = logging.Logger("Streamlit", level=logging.DEBUG)
+HANDLER = logging.StreamHandler(sys.stdout)
+HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
+LOGGER.addHandler(HANDLER)
 
 API_URI = os.environ.get("API_URI")
 STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN")
@@ -104,6 +111,106 @@ def invoke_step_function(
         raise Exception(f"Error in step function execution: {str(e)}")
 
 
+async def get_file_name(file, prefix: str = "") -> str:
+    """
+    Generate or extract file name with optional prefix
+    
+    Parameters
+    ----------
+    file : file-like object or str
+        File to upload
+    prefix : str, optional
+        Prefix for the file name, by default ""
+    """
+    if isinstance(file, str):
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        file_name = f"document_{timestamp}.txt"
+        LOGGER.debug(f"Created timestamp-based filename for text input: {file_name}")
+    else:
+        file_name = file.name
+        LOGGER.debug(f"Using original filename: {file_name}")
+    
+    return f"{prefix}/{file_name}" if prefix else file_name
+
+
+async def get_presigned_url(session: aiohttp.ClientSession, file_name: str, access_token: str) -> dict:
+    """
+    Get presigned URL from API Gateway
+    
+    Parameters
+    ----------
+    session : aiohttp.ClientSession
+        Client session for making HTTP requests
+    file_name : str
+        Name of the file to upload
+    access_token : str
+        Access token for API Gateway
+    """
+    LOGGER.info("Requesting presigned URL from API Gateway")
+    async with session.post(
+        url=API_URI + "/url",
+        json={"file_name": file_name},
+        headers={"Authorization": access_token},
+        timeout=REQUEST_TIMEOUT,
+    ) as response:
+        LOGGER.debug(f"Presigned URL response status: {response.status}")
+        response.raise_for_status()
+        response_data = await response.json()
+        LOGGER.debug(f"Presigned URL response data: {response_data}")
+        return response_data
+
+
+async def prepare_upload_form(file, file_name: str, presigned_fields: dict) -> aiohttp.FormData:
+    """
+    Prepare form data for S3 upload
+    
+    Parameters
+    ----------
+    file : file-like object or str
+        File to upload
+    file_name : str
+        Name of the file to upload
+    presigned_fields : dict
+        Fields from the presigned URL
+    """
+    LOGGER.info("Preparing file content and form data")
+    # Prepare file content
+    file_content = file.encode() if isinstance(file, str) else file.getvalue()
+    
+    # Create form with S3 fields
+    form = aiohttp.FormData()
+    for field_name, field_value in presigned_fields.items():
+        form.add_field(field_name, field_value)
+    
+    # Add file content
+    form.add_field("file", file_content, filename=file_name, content_type='application/octet-stream')
+    return form
+
+
+async def upload_to_s3(session: aiohttp.ClientSession, url: str, form: aiohttp.FormData) -> None:
+    """
+    Upload form data to S3
+    
+    Parameters
+    ----------
+    session : aiohttp.ClientSession
+        Client session for making HTTP requests
+    url : str
+        URL to upload the file to
+    form : aiohttp.FormData
+        Form data to upload
+    """
+    LOGGER.info("Uploading to S3")
+    async with session.post(
+        url=url,
+        data=form,
+        timeout=REQUEST_TIMEOUT,
+    ) as response:
+        LOGGER.debug(f"S3 upload response status: {response.status}")
+        LOGGER.debug(f"S3 upload response headers: {response.headers}")
+        response.raise_for_status()
+        LOGGER.info("Upload successful")
+
 async def invoke_file_upload_async(
     file,
     access_token: str,
@@ -111,43 +218,50 @@ async def invoke_file_upload_async(
 ) -> str:
     """
     Async version of get presigned URL via API Gateway and upload the file to S3
+
+    Parameters
+    ----------
+    file : file-like object or str
+        File to upload
+    access_token : str
+        Access token for API Gateway
+    prefix : str, optional
+        Prefix for the file name, by default ""
     """
-    if isinstance(file, str):
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        file_name = f"document_{timestamp}.txt"
-    else:
-        file_name = file.name
+    LOGGER.info(f"Starting file upload process for file: {getattr(file, 'name', 'text input')}")
 
-    params = {"file_name": f"{prefix}/{file_name}" if prefix else file_name}
+    try:
+        file_name = await get_file_name(file, prefix)
+        file_content = file.encode() if isinstance(file, str) else file.getvalue()
+        
+        async with aiohttp.ClientSession() as session:
+            response_data = await get_presigned_url(session, file_name, access_token)
+            
+            if "post" in response_data:
+                # Create multipart form data
+                data = aiohttp.MultipartWriter('form-data')
+                
+                # Add all fields from presigned URL first
+                fields = response_data["post"]["fields"]
+                for field_name, field_value in fields.items():
+                    part = data.append(field_value)
+                    part.set_content_disposition('form-data', name=field_name)
+                
+                # Add file content last
+                part = data.append(file_content)
+                part.set_content_disposition('form-data', name='file', filename=file_name)
+                part.headers['Content-Type'] = 'application/octet-stream'
 
-    async with aiohttp.ClientSession() as session:
-        # Get presigned URL
-        async with session.post(
-            url=API_URI + "/url",
-            json=params,
-            headers={"Authorization": access_token},
-            timeout=REQUEST_TIMEOUT,
-        ) as response:
-            response.raise_for_status()
-            response_data = await response.json()
-
-        # Upload file to S3
-        if "post" in response_data:
-            form = aiohttp.FormData()
-            # Add all fields from presigned URL - fields must be added before file
-            for field_name, field_value in response_data["post"]["fields"].items():
-                form.add_field(field_name, field_value)
-            # Add the file as the last field
-            if isinstance(file, str):
-                form.add_field("file", file.encode(), filename=file_name)
+                async with session.post(
+                    url=response_data["post"]["url"],
+                    data=data,
+                    timeout=REQUEST_TIMEOUT,
+                ) as response:
+                    LOGGER.debug(f"S3 upload response status: {response.status}")
+                    response.raise_for_status()
+                    return fields["key"]
             else:
-                form.add_field("file", file.getvalue(), filename=file_name)
-
-            async with session.post(
-                url=response_data["post"]["url"],
-                data=form,
-                timeout=REQUEST_TIMEOUT,
-            ) as post_response:
-                post_response.raise_for_status()
-
-        return response_data["post"]["fields"]["key"]
+                raise ValueError("Invalid presigned URL response format")
+    except Exception as e:
+        LOGGER.error(f"Error during upload: {str(e)}")
+        raise

@@ -73,3 +73,7 @@ cdk.context.json
 package-lock.json
 package.json
 *.DS_Store
+
+dyepack_scan/
+repomix-output.txt
+test_directs.py

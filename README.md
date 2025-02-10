@@ -141,6 +141,16 @@ Make sure the Docker daemon is running in case you deploy the Streamlit frontend
 cdk deploy --profile [PROFILE_NAME]
 ```
 
+### 8. Update Cognito URLs
+
+After successful deployment, you'll need to update the Cognito User Pool Client with the correct callback and logout URLs. Get the CloudFront domain from the CDK output, then run the update script: 
+
+```bash
+sh update_cognito_urls.sh [your-stack-name] [CLOUDFRONT_DOMAIN]
+```
+
+Now you can use the app by visiting the CloudFront URL!
+
 ### Clean up
 
 You can delete the CDK stack from your AWS account by running:
@@ -188,7 +198,6 @@ or
 - Open the AWS console, and go to CloudFront
 - Copy the Domain name of the created distribution
 
-
 #### Local Testing
 
 You can run the Streamlit frontend locally for testing and development by following these steps:
@@ -205,6 +214,8 @@ You can run the Streamlit frontend locally for testing and development by follow
 - Install frontend dependencies ```poetry install```
 - Start frontend on localhost ```streamlit run src/Home.py```
 - Copy the local URL from the terminal output and paste in the address bar of your browser
+- Make sure that the local URL you use is http://localhost:8501. It will not work otherwise. 
+- Update the `.env` file with the relevant environment variables. 
 
 # 🏗️ Architecture
 
