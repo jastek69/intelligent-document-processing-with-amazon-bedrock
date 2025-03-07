@@ -30,7 +30,7 @@ def invoke_step_function(
     file_keys: list[str],
     attributes: list[dict],
     instructions: str = "",
-    few_shots: list[dict] = [],
+    few_shots: list[dict] = [],  # noqa: B006
     model_id: str = "anthropic.claude-v2:1",
     parsing_mode: str = "Amazon Textract",
     temperature: float = 0.0,
@@ -108,13 +108,13 @@ def invoke_step_function(
                 break
 
     except Exception as e:
-        raise Exception(f"Error in step function execution: {str(e)}")
+        raise Exception(f"Error in step function execution: {str(e)}")  # noqa: B904
 
 
 async def get_file_name(file, prefix: str = "") -> str:
     """
     Generate or extract file name with optional prefix
-    
+
     Parameters
     ----------
     file : file-like object or str
@@ -129,14 +129,14 @@ async def get_file_name(file, prefix: str = "") -> str:
     else:
         file_name = file.name
         LOGGER.debug(f"Using original filename: {file_name}")
-    
+
     return f"{prefix}/{file_name}" if prefix else file_name
 
 
 async def get_presigned_url(session: aiohttp.ClientSession, file_name: str, access_token: str) -> dict:
     """
     Get presigned URL from API Gateway
-    
+
     Parameters
     ----------
     session : aiohttp.ClientSession
@@ -163,7 +163,7 @@ async def get_presigned_url(session: aiohttp.ClientSession, file_name: str, acce
 async def prepare_upload_form(file, file_name: str, presigned_fields: dict) -> aiohttp.FormData:
     """
     Prepare form data for S3 upload
-    
+
     Parameters
     ----------
     file : file-like object or str
@@ -176,21 +176,21 @@ async def prepare_upload_form(file, file_name: str, presigned_fields: dict) -> a
     LOGGER.info("Preparing file content and form data")
     # Prepare file content
     file_content = file.encode() if isinstance(file, str) else file.getvalue()
-    
+
     # Create form with S3 fields
     form = aiohttp.FormData()
     for field_name, field_value in presigned_fields.items():
         form.add_field(field_name, field_value)
-    
+
     # Add file content
-    form.add_field("file", file_content, filename=file_name, content_type='application/octet-stream')
+    form.add_field("file", file_content, filename=file_name, content_type="application/octet-stream")
     return form
 
 
 async def upload_to_s3(session: aiohttp.ClientSession, url: str, form: aiohttp.FormData) -> None:
     """
     Upload form data to S3
-    
+
     Parameters
     ----------
     session : aiohttp.ClientSession
@@ -210,6 +210,7 @@ async def upload_to_s3(session: aiohttp.ClientSession, url: str, form: aiohttp.F
         LOGGER.debug(f"S3 upload response headers: {response.headers}")
         response.raise_for_status()
         LOGGER.info("Upload successful")
+
 
 async def invoke_file_upload_async(
     file,
@@ -233,24 +234,24 @@ async def invoke_file_upload_async(
     try:
         file_name = await get_file_name(file, prefix)
         file_content = file.encode() if isinstance(file, str) else file.getvalue()
-        
+
         async with aiohttp.ClientSession() as session:
             response_data = await get_presigned_url(session, file_name, access_token)
-            
+
             if "post" in response_data:
                 # Create multipart form data
-                data = aiohttp.MultipartWriter('form-data')
-                
+                data = aiohttp.MultipartWriter("form-data")
+
                 # Add all fields from presigned URL first
                 fields = response_data["post"]["fields"]
                 for field_name, field_value in fields.items():
                     part = data.append(field_value)
-                    part.set_content_disposition('form-data', name=field_name)
-                
+                    part.set_content_disposition("form-data", name=field_name)
+
                 # Add file content last
                 part = data.append(file_content)
-                part.set_content_disposition('form-data', name='file', filename=file_name)
-                part.headers['Content-Type'] = 'application/octet-stream'
+                part.set_content_disposition("form-data", name="file", filename=file_name)
+                part.headers["Content-Type"] = "application/octet-stream"
 
                 async with session.post(
                     url=response_data["post"]["url"],

@@ -38,7 +38,7 @@ with open(STACK_CONFIG_PATH, "r", encoding="utf-8") as yaml_file:
 
 LOGGER.info("Creating app scope")
 app = cdk.App()
-env = cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=os.getenv("CDK_DEFAULT_REGION"))
+env = cdk.Environment(account=os.getenv("CDK_DEFAULT_ACCOUNT"), region=stack_config["stack_region"])
 LOGGER.info(f"Creating solution stack using {env=} and {stack_config=}")
 stack = IDPBedrockStack(scope=app, stack_name=stack_config["stack_name"], config=stack_config, env=env)
 

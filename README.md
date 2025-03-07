@@ -22,7 +22,7 @@ Converting custom documents into a structured database is a recurring business t
 This repo provides an AWS CDK solution that extracts information from documents in minutes using generative AI.
 
 The solution has the following key features:
-- Extract different information types, including: 
+- Extract different information types, including:
   - Well-defined entities (e.g., name, title)
   - Numeric scores (e.g., sentiment, urgency)
   - Free-form content (e.g., summary, suggested response)
@@ -56,13 +56,13 @@ run_idp_bedrock_api(
 
 <p float="left">
   <img src="screenshots/example_input.png" width="49%" />
-  <img src="screenshots/example_output.png" width="49%" /> 
+  <img src="screenshots/example_output.png" width="49%" />
 </p>
 
 
 # 🔧 Deploy the App
 
-To deploy the app to your AWS account, you can use a local IDE or create a SageMaker Notebook instance. 
+To deploy the app to your AWS account, you can use a local IDE or create a SageMaker Notebook instance.
 
 We recommend using SageMaker to avoid installing extra requirements. Set up `ml.m5.large` instance and make sure the IAM role attached to the notebook has sufficient permissions for deploying CloudFormation stacks.
 
@@ -144,7 +144,7 @@ cdk deploy --profile [PROFILE_NAME]
 
 ### 8. Update Cognito URLs
 
-After successful deployment, you'll need to update the Cognito User Pool Client with the correct callback and logout URLs. Get the CloudFront domain from the CDK output, then run the update script: 
+After successful deployment, you'll need to update the Cognito User Pool Client with the correct callback and logout URLs. Get the CloudFront domain from the CDK output, then run the update script:
 
 ```bash
 sh update_cognito_urls.sh [your-stack-name] [CLOUDFRONT_DOMAIN]
@@ -212,7 +212,7 @@ You can run the Streamlit frontend locally for testing and development by follow
 - Deploy the CDK stack once
 - Copy ```assets/streamlit/.env.example``` to ```assets/streamlit/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
 - Provide AWS credentials
-  - You can add AWS credentials to the ```assets/streamlit/.env``` file 
+  - You can add AWS credentials to the ```assets/streamlit/.env``` file
   - Or simply export credentials in your terminal, e.g. ```export AWS_PROFILE=<profile>```
 - Navigate to the frontend folder: ```cd assets/streamlit```
 - Create another environment with for the frontend ```python3 -m venv .venv```
@@ -220,8 +220,10 @@ You can run the Streamlit frontend locally for testing and development by follow
 - Install frontend dependencies ```poetry install```
 - Start frontend on localhost ```streamlit run src/Home.py```
 - Copy the local URL from the terminal output and paste in the address bar of your browser
-- Make sure that the local URL you use is http://localhost:8501. It will not work otherwise. 
-- Update the `.env` file with the relevant environment variables. 
+- Make sure that the local URL you use is http://localhost:8501. It will not work otherwise.
+- Update the `.env` file with the relevant environment variables.
+
+In order to keep coding standards and formatting consistent, we use `pre-commit`. This can be run from the terminal via `poetry run pre-commit run -a`.
 
 # 🏗️ Architecture
 

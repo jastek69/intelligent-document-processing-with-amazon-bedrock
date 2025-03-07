@@ -6,10 +6,9 @@ File content:
 """
 
 import os
-import json
 from pathlib import Path
 
-from aws_cdk import Duration 
+from aws_cdk import Duration
 from aws_cdk import Aws, NestedStack, RemovalPolicy, Tags
 from aws_cdk import CfnOutput as output
 from aws_cdk import aws_cloudfront as cloudfront
@@ -21,11 +20,13 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
+
 # from aws_cdk import custom_resources as cr
 from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin
 from aws_cdk.aws_ecr_assets import DockerImageAsset
 from cdk_nag import NagPackSuppression, NagSuppressions
 from constructs import Construct
+
 
 class CloudWatchLogGroup(Construct):
     ALLOWED_WRITE_ACTIONS = [
@@ -121,7 +122,6 @@ class IDPBedrockStreamlitStack(NestedStack):
         self.ssm_state_machine_arn = ssm_state_machine_arn
         self.state_machine_name = state_machine_name
         self.ssm_cognito_domain = ssm_cognito_domain
-        
 
         self.docker_asset = self.build_docker_push_ecr()
 
@@ -168,7 +168,7 @@ class IDPBedrockStreamlitStack(NestedStack):
             # asset_name = f"{prefix}-streamlit-img",
             directory=os.path.join(Path(__file__).parent.parent.parent, "assets/streamlit"),
         )
-    
+
     def create_webapp_vpc(self, open_to_public_internet=False):
         # VPC for ALB and ECS cluster
         vpc = ec2.Vpc(
@@ -228,32 +228,31 @@ class IDPBedrockStreamlitStack(NestedStack):
             connection=ec2.Port.tcp(8501),
             description="ALB traffic",
         )
-        
-        
+
         # Add rule to allow traffic from CloudFront to ALB
         self.alb_security_group.add_ingress_rule(
-            peer=ec2.Peer.ipv4('130.176.0.0/16'),  # CloudFront IP range
+            peer=ec2.Peer.ipv4("130.176.0.0/16"),  # CloudFront IP range
             connection=ec2.Port.tcp(80),
-            description='Allow CloudFront traffic'
+            description="Allow CloudFront traffic",
         )
 
         # Add other CloudFront IP ranges
         for ip_range in [
-            '15.158.0.0/16',
-            '130.176.0.0/16',
-            '15.188.0.0/16',
-            '130.176.0.0/16',
-            '108.156.0.0/14',
-            '120.52.0.0/16',
-            '205.251.208.0/20',
-            '180.163.57.0/24',
-            '204.246.164.0/22',
-            '54.192.0.0/16',
+            "15.158.0.0/16",
+            "130.176.0.0/16",
+            "15.188.0.0/16",
+            "130.176.0.0/16",
+            "108.156.0.0/14",
+            "120.52.0.0/16",
+            "205.251.208.0/20",
+            "180.163.57.0/24",
+            "204.246.164.0/22",
+            "54.192.0.0/16",
         ]:
             self.alb_security_group.add_ingress_rule(
                 peer=ec2.Peer.ipv4(ip_range),
                 connection=ec2.Port.tcp(80),
-                description=f'Allow CloudFront traffic from {ip_range}'
+                description=f"Allow CloudFront traffic from {ip_range}",
             )
 
         return vpc
@@ -347,8 +346,7 @@ class IDPBedrockStreamlitStack(NestedStack):
             statements=[
                 iam.PolicyStatement(
                     actions=["s3:GetObject*", "s3:GetBucket*", "s3:List*", "s3:PutObject*", "s3:DeleteObject*"],
-                    resources=[self.s3_data_bucket.bucket_arn, 
-                               self.s3_data_bucket.bucket_arn + "/*"],
+                    resources=[self.s3_data_bucket.bucket_arn, self.s3_data_bucket.bucket_arn + "/*"],
                     effect=iam.Effect.ALLOW,
                 ),
             ]
@@ -360,23 +358,17 @@ class IDPBedrockStreamlitStack(NestedStack):
             document=s3_docpolicy,
         )
         task_execution_role.attach_inline_policy(s3_policy)
-        
+
         task_execution_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["s3:GetObject", "s3:ListBucket"],
-                resources=[
-                    self.s3_data_bucket.bucket_arn,
-                    f"{self.s3_data_bucket.bucket_arn}/*"
-                ]
+                resources=[self.s3_data_bucket.bucket_arn, f"{self.s3_data_bucket.bucket_arn}/*"],
             )
         )
 
         ecs_log_driver = ecs.LogDrivers.aws_logs(
             stream_prefix="AwsLogsLogDriver", log_group=log_group.log_group
         )  # Full log stream name: [PREFIX]/[CONTAINER-NAME]/[ECS-TASK-ID]
-
-
-
 
         # TODO add WAF support
         # ********* WAF *********
@@ -436,7 +428,7 @@ class IDPBedrockStreamlitStack(NestedStack):
                         statusCode: 302,
                         statusDescription: 'Found',
                         headers: {{
-                            'location': {{ 
+                            'location': {{
                                 value: '/?code=' + request.querystring.code.value
                             }},
                             'cache-control': {{
@@ -487,10 +479,9 @@ class IDPBedrockStreamlitStack(NestedStack):
 
                 return request;
             }}
-            """)
+            """),
         )
-        
-        
+
         # Create the CloudFront distribution with redirect behavior
         distribution_name = f"{self.prefix}-cf-dist"
         cloudfront_distribution = cloudfront.Distribution(
@@ -511,28 +502,22 @@ class IDPBedrockStreamlitStack(NestedStack):
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
                 function_associations=[
-                    cloudfront.FunctionAssociation(
-                        function=function,
-                        event_type=FunctionEventType.VIEWER_REQUEST
-                    )
-                ]
+                    cloudfront.FunctionAssociation(function=function, event_type=FunctionEventType.VIEWER_REQUEST)
+                ],
             ),
             enable_logging=True,
             log_bucket=self.s3_logs_bucket,
             log_file_prefix=f"distributions/{distribution_name}",
             # default_root_object="oauth2/authorize",
-        ) 
-        
+        )
 
-        
         self.ssm_cloudfront_domain = ssm.StringParameter(
             self,
             f"{self.prefix}-SsmCloudFront",
             parameter_name=f"/{self.prefix}/ecs/CLOUDFRONT_DOMAIN",
-            string_value=f"{cloudfront_distribution.domain_name}"
+            string_value=f"{cloudfront_distribution.domain_name}",
         )
-        
-        
+
         # Create Fargate task definition AFTER creating SSM parameters
         fargate_task_definition = ecs.FargateTaskDefinition(
             self,
@@ -542,7 +527,7 @@ class IDPBedrockStreamlitStack(NestedStack):
             execution_role=task_execution_role,
             task_role=task_execution_role,
         )
-        
+
         # Add container with the secrets
         fargate_task_definition.add_container(
             "StreamlitAppContainer",
@@ -559,7 +544,7 @@ class IDPBedrockStreamlitStack(NestedStack):
                 "BEDROCK_MODEL_IDS": ecs.Secret.from_ssm_parameter(self.ssm_bedrock_model_ids),
                 "STATE_MACHINE_ARN": ecs.Secret.from_ssm_parameter(self.ssm_state_machine_arn),
                 "COGNITO_DOMAIN": ecs.Secret.from_ssm_parameter(self.ssm_cognito_domain),
-                "CLOUDFRONT_DOMAIN": ecs.Secret.from_ssm_parameter(self.ssm_cloudfront_domain) 
+                "CLOUDFRONT_DOMAIN": ecs.Secret.from_ssm_parameter(self.ssm_cloudfront_domain),
             },
             logging=ecs_log_driver,
         )
@@ -573,28 +558,21 @@ class IDPBedrockStreamlitStack(NestedStack):
             security_groups=[self.ecs_security_group],
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
         )
-        
+
         # ********* ALB Listener *********
 
         http_listener = alb.add_listener(
             f"{self.prefix}-http-listener{alb_suffix}",
             port=80,
             default_action=elbv2.ListenerAction.fixed_response(
-                status_code=403,
-                content_type="text/plain",
-                message_body="Access denied"
+                status_code=403, content_type="text/plain", message_body="Access denied"
             ),  # Default deny all traffic
         )
 
         # Add target group with custom header validation
         http_listener.add_action(
             "allow-cloudfront",
-            conditions=[
-                elbv2.ListenerCondition.http_header(
-                    self.custom_header_name, 
-                    [self.custom_header_value]
-                )
-            ],
+            conditions=[elbv2.ListenerCondition.http_header(self.custom_header_name, [self.custom_header_value])],
             priority=1,
             action=elbv2.ListenerAction.forward(
                 target_groups=[
@@ -607,20 +585,17 @@ class IDPBedrockStreamlitStack(NestedStack):
                         targets=[service],
                         target_group_name=f"{self.prefix}-tg{alb_suffix}",
                         health_check={  # Add this health check configuration
-                            'path': '/_stcore/health',
-                            'port': '8501',
-                            'protocol': elbv2.Protocol.HTTP,
-                            'interval': Duration.seconds(30),
-                            'timeout': Duration.seconds(5),
-                            'healthy_threshold_count': 2,
-                            'unhealthy_threshold_count': 5,
-                        }
+                            "path": "/_stcore/health",
+                            "port": "8501",
+                            "protocol": elbv2.Protocol.HTTP,
+                            "interval": Duration.seconds(30),
+                            "timeout": Duration.seconds(5),
+                            "healthy_threshold_count": 2,
+                            "unhealthy_threshold_count": 5,
+                        },
                     )
                 ]
-            )
+            ),
         )
-
-
-
 
         return cluster, alb, cloudfront_distribution

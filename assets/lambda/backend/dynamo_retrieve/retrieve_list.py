@@ -9,8 +9,7 @@ FEW_SHOTS_TABLE_NAME = os.environ["FEW_SHOTS_TABLE_NAME"]
 
 LOGGER = logging.Logger("Load-Few-Shots-List", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
-HANDLER.setFormatter(logging.Formatter(
-"%(levelname)s | %(name)s | %(message)s"))
+HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
 
 

@@ -54,13 +54,14 @@ USER_POOL_ID = os.environ["USER_POOL_ID"]
 REGION = os.environ["REGION"]
 CLOUDFRONT_DOMAIN = os.environ.get("CLOUDFRONT_DOMAIN")
 COGNITO_DOMAIN = os.environ["COGNITO_DOMAIN"]
-from components.authenticate import local_redirect_to_cognito, exchange_code_for_token
+from components.authenticate import local_redirect_to_cognito, exchange_code_for_token  # noqa: E402
 
 
 # By default, we define the production CloudFront redirect
 PROD_REDIRECT_URI = f"https://{CLOUDFRONT_DOMAIN}/oauth2/idpresponse"
-AUTHORIZATION_ENDPOINT = f'https://{COGNITO_DOMAIN}/oauth2/authorize'
-TOKEN_ENDPOINT = f'https://{COGNITO_DOMAIN}/oauth2/token'
+AUTHORIZATION_ENDPOINT = f"https://{COGNITO_DOMAIN}/oauth2/authorize"
+TOKEN_ENDPOINT = f"https://{COGNITO_DOMAIN}/oauth2/token"
+
 
 def init_session_state():
     if "authenticated" not in st.session_state:
@@ -75,7 +76,7 @@ def init_session_state():
 def main():
     # 1) Initialize session state
     init_session_state()
-    
+
     # 2) Page config and styling
     st.set_page_config(
         page_title=PAGE_TITLE,
@@ -83,13 +84,13 @@ def main():
         layout="centered",
         initial_sidebar_state="collapsed",
     )
-    
+
     with st.empty():
         set_page_styling()
-        
+
     LOGGER.debug("=== Starting Authentication Flow ===")
     LOGGER.debug(f"Session State: {st.session_state}")
-    
+
     # 3) If local_auth_flow is True, do the local redirect logic
     if st.session_state["local_auth_flow"]:
         local_redirect_to_cognito()
@@ -97,16 +98,16 @@ def main():
     # 4) Handle code from query params
     query_params = st.query_params
     auth_code = query_params.get("code")
-    
+
     LOGGER.debug(f"COGNITO_DOMAIN: {COGNITO_DOMAIN}")
     LOGGER.debug(f"TOKEN_ENDPOINT: {TOKEN_ENDPOINT}")
     LOGGER.debug(f"Current URL params: {query_params}")
     LOGGER.debug(f"Session state: {st.session_state}")
-    
+
     if auth_code and not st.session_state["authenticated"]:
         LOGGER.info("Processing authentication code...")
         tokens = exchange_code_for_token(auth_code, TOKEN_ENDPOINT, PROD_REDIRECT_URI)
-        
+
         if tokens:
             LOGGER.info("Authentication successful!")
             st.session_state["access_tkn"] = tokens["access_token"]
@@ -120,7 +121,7 @@ def main():
             st.session_state["authenticated"] = False
             st.session_state.pop("access_tkn", None)
             st.stop()
-    
+
     # 5) If user is authenticated, show main content; else show "Authenticating..."
     if st.session_state["authenticated"]:
         LOGGER.info("User is authenticated, showing main content")
@@ -130,7 +131,7 @@ def main():
         with st.container():
             if COVER_IMAGE:
                 st.markdown(
-                    f'<img src="{COVER_IMAGE}" width="100%" style="margin-left: auto; margin-right: auto; display: block;">',
+                    f'<img src="{COVER_IMAGE}" width="100%" style="margin-left: auto; margin-right: auto; display: block;">',  # noqa: E501
                     unsafe_allow_html=True,
                 )
                 LOGGER.debug("Cover image markdown rendered")
@@ -141,13 +142,14 @@ def main():
         # Add sidebar navigation
         add_indentation()
         show_pages_from_config()
-        
+
         # Switch to main page (IDP Bedrock UI)
         st.switch_page("app_pages/idp_bedrock.py")
     else:
         LOGGER.info("User is not authenticated, showing loading state")
         st.write("Authenticating...")
         st.stop()
+
 
 if __name__ == "__main__":
     main()
