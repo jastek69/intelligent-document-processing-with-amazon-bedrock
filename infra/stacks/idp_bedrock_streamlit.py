@@ -447,7 +447,7 @@ class IDPBedrockStreamlitStack(NestedStack):
                 }}
 
                 // If the request is to '/' and has a code, allow it to pass through
-                if (uri === '/' && request.querystring.code) {{
+                if (request.querystring.code) {{
                     return request;
                 }}
 
@@ -456,7 +456,8 @@ class IDPBedrockStreamlitStack(NestedStack):
                     '/static/',
                     '/_stcore/',
                     '/favicon.ico',
-                    '/robots.txt'
+                    '/robots.txt',
+                    '/app/'
                     // Add more paths as needed
                 ];
 
@@ -467,7 +468,7 @@ class IDPBedrockStreamlitStack(NestedStack):
                 }}
 
                 // If no code, redirect to Cognito
-                if (!uri.startsWith('/oauth2/')) {{
+                if (uri === '/') {{
                     var cognitoUrl = 'https://{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com/oauth2/authorize';
                     cognitoUrl += '?client_id={self.ssm_client_id.string_value}';
                     cognitoUrl += '&response_type=code';
