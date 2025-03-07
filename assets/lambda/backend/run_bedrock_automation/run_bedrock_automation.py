@@ -58,19 +58,16 @@ def lambda_handler(event, context):  # noqa: C901
     else:  # step functions invocation
         body = event["body"]
     LOGGER.info(f"Received input: {body}")
-    
+
     # get file S3 path
     file_name = body["file_name"]
     file_source = f"s3://{S3_BUCKET}/{file_name}"
-    
+
     # format attributes
     attributes = body["attributes"]
     formatted_attributes = {
-        item["name"]: {
-            "type": "string",
-            "inferenceType": "generative", 
-            "description": item["description"]
-        } for item in attributes
+        item["name"]: {"type": "string", "inferenceType": "generative", "description": item["description"]}
+        for item in attributes
     }
 
     # define blueprint
@@ -84,9 +81,9 @@ def lambda_handler(event, context):  # noqa: C901
         "documentClass": "custom-document-type",
         "description": blueprint_description,
         "definitions": {},
-        "properties": formatted_attributes, 
+        "properties": formatted_attributes,
     }
-    
+
     # create or update blueprint
     list_blueprints_response = BDA_CLIENT.list_blueprints(blueprintStageFilter="ALL")
     blueprint = next(
@@ -104,18 +101,14 @@ def lambda_handler(event, context):  # noqa: C901
             blueprintStage=blueprint_stage,
             schema=json.dumps(blueprint_schema),
         )
-        LOGGER.info(
-            f"Creating new blueprint with name={blueprint_name}, updating Stage and Schema"
-        )
+        LOGGER.info(f"Creating new blueprint with name={blueprint_name}, updating Stage and Schema")
     else:
         response = BDA_CLIENT.update_blueprint(
             blueprintArn=blueprint["blueprintArn"],
             blueprintStage=blueprint_stage,
             schema=json.dumps(blueprint_schema),
         )
-        LOGGER.info(
-            f"Found existing blueprint with name={blueprint_name}, updating Stage and Schema"
-        )
+        LOGGER.info(f"Found existing blueprint with name={blueprint_name}, updating Stage and Schema")
     blueprint_arn = response["blueprint"]["blueprintArn"]
 
     # start data invocation sync
@@ -126,19 +119,25 @@ def lambda_handler(event, context):  # noqa: C901
     )
     invocationArn = response["invocationArn"]
     LOGGER.info(f"Invoked data automation job with invocation arn {invocationArn}")
-    
+
     # wait for completion
     status = "None"
     while status not in ["Success", "ServiceError", "ClientError"]:
         time.sleep(int(1))
-        LOGGER.info(f"Waiting for data automation job to complete...")
-        status_response = BDA_RUNTIME_CLIENT.get_data_automation_status(
-            invocationArn=invocationArn
-        )
+        LOGGER.info("Waiting for data automation job to complete...")
+
+        try:
+            status_response = BDA_RUNTIME_CLIENT.get_data_automation_status(invocationArn=invocationArn)
+            LOGGER.info(f"Data automation job status response: {status_response}")
+        except Exception as e:
+            LOGGER.error(f"Error getting data automation job status: {e}")
+            raise
+
         status = status_response["status"]
         LOGGER.info(f"Data automation job status: {status}")
         if status in ["ServiceError", "ClientError"]:
-            raise Exception("Data automation job failed")
+            raise Exception(status_response.get("errorMessage", "Data automation job failed"))
+
     LOGGER.info(f"Data automation job completed with status: {status}")
 
     job_metadata_s3_location = status_response["outputConfiguration"]["s3Uri"]
@@ -147,9 +146,7 @@ def lambda_handler(event, context):  # noqa: C901
     s3_uri_parts = job_metadata_s3_location.removeprefix("s3://").split("/", 1)
     response = S3_CLIENT.get_object(Bucket=s3_uri_parts[0], Key=s3_uri_parts[1])
     job_metadata = json.loads(response["Body"].read().decode("utf-8"))
-    custom_output_path = job_metadata["output_metadata"][0]["segment_metadata"][0][
-        "custom_output_path"
-    ]
+    custom_output_path = job_metadata["output_metadata"][0]["segment_metadata"][0]["custom_output_path"]
 
     # get extracted attributes JSON
     s3_uri_parts = custom_output_path.removeprefix("s3://").split("/", 1)
@@ -157,9 +154,9 @@ def lambda_handler(event, context):  # noqa: C901
     custom_outputs_json = json.loads(response["Body"].read().decode("utf-8"))
     attributes = custom_outputs_json["inference_result"]
 
-    raw_answer = f"<thinking>No explanation available when using Bedrock Data Automation./</thinking>"
+    raw_answer = "<thinking>No explanation available when using Bedrock Data Automation./</thinking>"
     raw_answer += f"<json>{json.dumps(attributes)}</json>"
-    
+
     json_data = json.dumps(
         {
             "answer": attributes,

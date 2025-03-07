@@ -46,11 +46,12 @@ USER_POOL_ID = os.environ["USER_POOL_ID"]
 REGION = os.environ.get("REGION")
 if not os.environ.get("LOCAL_AUTH_FLOW"):
     CLOUDFRONT_DOMAIN = os.environ["CLOUDFRONT_DOMAIN"]
-COGNITO_DOMAIN = os.environ['COGNITO_DOMAIN']
-LOGOUT_URI = f"http://localhost:8501" if os.environ.get("LOCAL_AUTH_FLOW") else f"https://{CLOUDFRONT_DOMAIN}"
+COGNITO_DOMAIN = os.environ["COGNITO_DOMAIN"]
+LOGOUT_URI = "http://localhost:8501" if os.environ.get("LOCAL_AUTH_FLOW") else f"https://{CLOUDFRONT_DOMAIN}"
 
 # Initialize the JWT client
 jwks_client = PyJWKClient(f"https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json")
+
 
 def initialise_st_state_vars() -> None:
     """
@@ -70,8 +71,9 @@ def initialise_st_state_vars() -> None:
     st.session_state.setdefault("access_tkn", "")
     st.session_state.setdefault("refresh_tkn", "")
     st.session_state.setdefault("challenge", "")
-    st.session_state.setdefault("mfa_setup_link","")
+    st.session_state.setdefault("mfa_setup_link", "")
     st.session_state.setdefault("session", "")
+
 
 def generate_qrcode(url: str, path: str) -> str:
     """
@@ -109,6 +111,7 @@ def generate_qrcode(url: str, path: str) -> str:
     qrcode_path = os.path.join(path, f"qrcode_{current_ts}.png")
     img.save(qrcode_path)
     return qrcode_path
+
 
 def verify_access_token(token):
     """
@@ -148,7 +151,8 @@ def verify_access_token(token):
 
     except jwt.exceptions.InvalidTokenError as e:
         LOGGER.error(f"Invalid token: {str(e)}")
-        raise Exception("Invalid token")
+        raise Exception("Invalid token")  # noqa: B904
+
 
 def update_access_token() -> None:
     """
@@ -179,6 +183,7 @@ def update_access_token() -> None:
         st.session_state.pop("access_tkn", None)
         st.session_state.pop("refresh_tkn", None)
 
+
 def pad_base64(data: str) -> str:
     """
     Decode access token to JWT to get user's Cognito groups
@@ -197,6 +202,7 @@ def pad_base64(data: str) -> str:
     if missing_padding != 0:
         data += "=" * (4 - missing_padding)
     return data
+
 
 def get_user_attributes(id_tkn: str) -> dict:
     """
@@ -226,9 +232,10 @@ def get_user_attributes(id_tkn: str) -> dict:
             user_attrib_dict["username"] = username
     return user_attrib_dict
 
+
 def set_st_state_vars() -> None:
     """
-    Sets the Streamlit state variables after user authentication.  
+    Sets the Streamlit state variables after user authentication.
 
     Parameters
     ----------
@@ -247,6 +254,7 @@ def set_st_state_vars() -> None:
         # If token not valid anymore, create a new one with refresh token
         if not is_valid:
             update_access_token()
+
 
 def login_successful(response: dict) -> None:
     """
@@ -275,6 +283,7 @@ def login_successful(response: dict) -> None:
         st.session_state["user_id"] = user_attributes_dict.get("username", "")
         LOGGER.info("User successfully logged in.")
 
+
 def associate_software_token(user: str, session: str) -> str:
     """
     Associate new MFA token to user during MFA setup
@@ -299,6 +308,7 @@ def associate_software_token(user: str, session: str) -> str:
     except ClientError as e:
         LOGGER.error(f"Failed to associate software token: {e.response['Error']['Message']}")
         return None
+
 
 def sign_in(username: str, pwd: str) -> None:
     """
@@ -341,6 +351,7 @@ def sign_in(username: str, pwd: str) -> None:
         else:
             login_successful(response)
 
+
 def verify_token(token: str) -> bool:
     """
     Verify MFA token to complete MFA setup
@@ -375,9 +386,10 @@ def verify_token(token: str) -> bool:
             success = True
     return success, message
 
+
 def setup_mfa() -> None:
     """
-    Reply to MFA setup challenge  
+    Reply to MFA setup challenge
 
     Parameters
     ----------
@@ -407,6 +419,7 @@ def setup_mfa() -> None:
         st.session_state["session"] = ""
         login_successful(response)
     return success, message
+
 
 def sign_in_with_token(token: str) -> None:
     """
@@ -442,6 +455,7 @@ def sign_in_with_token(token: str) -> None:
         st.session_state["session"] = ""
         login_successful(response)
     return success, message
+
 
 def reset_password(password: str) -> None:
     """
@@ -488,6 +502,7 @@ def reset_password(password: str) -> None:
             st.session_state["session"] = ""
     return success, message
 
+
 def sign_out() -> None:
     """
     Sign out user by updating all relevant state parameters
@@ -514,14 +529,14 @@ def sign_out() -> None:
                 LOGGER.error(f"Failed to revoke token: {response.text}")
         except Exception as e:
             LOGGER.error(f"Exception during token revocation: {str(e)}")
-    
+
     st.session_state["authenticated"] = False
     st.session_state["user_cognito_groups"] = []
     st.session_state["access_tkn"] = ""
     st.session_state["refresh_tkn"] = ""
     st.session_state["challenge"] = ""
     st.session_state["session"] = ""
-    
+
     # Construct the logout URL with the logout_uri parameter
     COGNITO_LOGOUT_URL = f"https://{COGNITO_DOMAIN}/logout?client_id={CLIENT_ID}&logout_uri={LOGOUT_URI}"
     LOGGER.debug(f"Redirecting to Cognito Logout URL: {COGNITO_LOGOUT_URL}")
@@ -565,9 +580,9 @@ def local_redirect_to_cognito() -> None:
             st.stop()
 
 
-def exchange_code_for_token(code: str, token_endpoint:str, prod_direct_uri:str ) -> dict:
+def exchange_code_for_token(code: str, token_endpoint: str, prod_direct_uri: str) -> dict:
     """
-    Exchanges the code for an access token. 
+    Exchanges the code for an access token.
     For local dev, we assume redirect_uri=http://localhost:8501
     For production, we do https://{CLOUDFRONT_DOMAIN}/oauth2/idpresponse
 

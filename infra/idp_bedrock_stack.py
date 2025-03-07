@@ -110,7 +110,8 @@ class IDPBedrockStack(Stack):
                 id=f"{stack_name}-static-assets-deployment",
                 sources=[s3deploy.Source.asset("assets/static")],
                 destination_bucket=self.s3_data_bucket,
-                destination_key_prefix="images")
+                destination_key_prefix="images",
+            )
 
         ## **************** Lambda layers ****************
 
@@ -258,7 +259,7 @@ class IDPBedrockStack(Stack):
                 ssm_assistant_avatar_url=self.ssm_assistant_avatar_url,
                 ssm_state_machine_arn=self.api_constructs.ssm_state_machine_arn,
                 state_machine_name=self.api_constructs.idp_bedrock_state_machine.state_machine_name,
-                ssm_cognito_domain = self.api_constructs.ssm_cognito_domain
+                ssm_cognito_domain=self.api_constructs.ssm_cognito_domain,
             )
 
             self.cloudfront_distribution_name = output(
@@ -266,8 +267,6 @@ class IDPBedrockStack(Stack):
                 id="CloudfrontDistributionName",
                 value=self.streamlit_constructs.cloudfront.domain_name,
             )
-            
-            
 
         ## **************** Tags ****************
         Tags.of(self).add("StackName", stack_name)

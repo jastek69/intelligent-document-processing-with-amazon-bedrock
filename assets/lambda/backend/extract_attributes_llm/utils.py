@@ -1,14 +1,9 @@
-import warnings
-
-from griptape.tokenizers import (
-    AmazonBedrockTokenizer
-)
+from griptape.tokenizers import AmazonBedrockTokenizer
 
 
 def token_count_tokenizer(text: str, model: str) -> int:
     tokenizer = AmazonBedrockTokenizer(model=model)
-    token_count = tokenizer.count_tokens(text)
-    return token_count
+    return tokenizer.count_tokens(text)
 
 
 def get_max_input_token(model: str) -> int:
@@ -33,7 +28,7 @@ def get_max_input_token(model: str) -> int:
         return max_tokens
 
     except Exception as e:
-        raise Exception(f"Error getting max input tokens: {str(e)}")
+        raise Exception(f"Error getting max input tokens: {str(e)}")  # noqa: B904
 
 
 def truncate_document(
@@ -64,8 +59,7 @@ def truncate_document(
     doc_words = document.split(" ")
 
     # find the number of words to truncate text by around the middle of the document
-    split_parameter = (
-        token_count_total - max_token_model) // 2 if max_token_model < token_count_total else 0
+    split_parameter = (token_count_total - max_token_model) // 2 if max_token_model < token_count_total else 0
     mid_point = len(doc_words) // 2
 
     # truncate document in the middle if there the number of tokens in document + prompt
@@ -81,10 +75,9 @@ def truncate_document(
     for multiplier in multipliers:
         # print(multiplier, num_tokens_doc)
         truncated_doc = (
-            " ".join(
-                doc_words[: (mid_point - int(split_parameter * multiplier))])
+            " ".join(doc_words[: (mid_point - int(split_parameter * multiplier))])
             + "\n...\n"
-            + " ".join(doc_words[(mid_point + int(split_parameter * multiplier)):])
+            + " ".join(doc_words[(mid_point + int(split_parameter * multiplier)) :])
         )
         num_tokens_doc = token_count_tokenizer(truncated_doc, model)
         if num_tokens_doc < max_token_model - num_token_prompt:
@@ -92,8 +85,8 @@ def truncate_document(
 
     return truncated_doc
 
-def filled_prompt(attributes: str = "", template: str = "", instructions: str = "", document: str = ""
-) -> str:
+
+def filled_prompt(attributes: str = "", template: str = "", instructions: str = "", document: str = "") -> str:
     """
     Fills the prompt template with the few shots and attributes
 

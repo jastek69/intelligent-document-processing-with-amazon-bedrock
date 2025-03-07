@@ -14,7 +14,7 @@ PROMPT_DEFAULT_HEADER = """Extract attributes from the attached images and remem
     "attribute_n": "attribute_n value",
 }}
 </json>
-"""
+"""  # noqa: E501
 
 
 PROMPT_DEFAULT_TAIL = """
@@ -94,7 +94,7 @@ The document mentions the customer name in the email signature: Nikita Schulz. I
 }}
 </json>
 </example>
-"""
+"""  # noqa: E501
 
 
 def load_prompt_template(num_few_shots: int = 0, instructions: str = "") -> tuple[str, list[str]]:

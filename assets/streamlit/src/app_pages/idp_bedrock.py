@@ -1,5 +1,6 @@
 """
 Copyright © Amazon.com and Affiliates
+This code is being licensed under the terms of the Amazon Software License available at https://aws.amazon.com/asl/
 ----------------------------------------------------------------------
 File content:
     Streamlit frontend
@@ -388,7 +389,6 @@ def run_extraction() -> None:
         analyze_message = "Analyzing the document..."
 
     # Create persistent containers for status and errors
-    status_container = st.empty()
     error_container = st.container()
     thinking = st.empty()
     vertical_space = show_empty_container()
@@ -424,7 +424,7 @@ def run_extraction() -> None:
                     error_message = str(e)
                     if "does not support images" in error_message:
                         st.error(
-                            "Error: The selected model does not support image processing. Please choose a different model.",
+                            "Error: Selected LLM does not support image processing. Please choose a different model.",
                             icon="🚨",
                         )
                     else:
@@ -531,21 +531,26 @@ with tab_docs:
     )
     if st.session_state["docs_input_type"] == "Upload documents":
         if st.session_state["parsing_mode"] == "Bedrock Data Automation":
-            st.warning("Parsing with Bedrock Data Automation only supports PDF files.")
+            st.warning("Parsing with Bedrock Data Automation only supports PDF files up to 20 pages.")
         if st.session_state["parsing_mode"] == "Amazon Bedrock LLM":
-            st.warning(f"Parsing with Amazon Bedrock only supports selected Claude and Nova LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files.")
+            st.warning(
+                f"Parsing with Amazon Bedrock only supports selected Claude and Nova LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files."  # noqa: E501
+            )
         files = st.file_uploader(
             label="Upload your document(s):",
             accept_multiple_files=True,
             key=f"{st.session_state['docs_uploader_key']}",
-            type=["pdf"] if st.session_state["parsing_mode"] == "Bedrock Data Automation"
+            type=["pdf"]
+            if st.session_state["parsing_mode"] == "Bedrock Data Automation"
             else SUPPORTED_EXTENSIONS_BEDROCK
             if st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
             else SUPPORTED_EXTENSIONS,
         )
         for file in files:
-            if any([file.name.endswith(i) for i in OFFICE_EXTENSIONS]):
-                st.info("ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information.")
+            if any([file.name.endswith(i) for i in OFFICE_EXTENSIONS]):  # noqa: C419
+                st.info(
+                    "ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information."
+                )
             break
         st.session_state["docs"] = files[::-1]
     else:
@@ -716,7 +721,7 @@ if st.session_state["advanced_mode"]:
                 )
                 # if few_shots is not None:
                 #     with st.spinner("Uploading examples..."):
-                #         # TODO: look into the behaviour when not using deepcopy here (few_shot variable changes after file upload)
+                #         # TODO: look into behaviour when not using deepcopy (few_shot var changes after file upload)
                 #         file_key_markings = api.invoke_file_upload(
                 #             file=deepcopy(few_shots), prefix="few_shots", access_token=st.session_state["access_tkn"]
                 #         )

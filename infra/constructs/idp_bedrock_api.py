@@ -68,7 +68,7 @@ class IDPBedrockAPIConstructs(Construct):
         use_table: bool = True,
         mfa_enabled: bool = True,
         access_token_validity: int = 60,
-        cognito_users: list[str] = [],
+        cognito_users: list[str] = [],  # noqa: B006
         s3_kms_key: kms.Key = None,
         **kwargs,
     ) -> None:
@@ -139,7 +139,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.nag_suppressed_resources = []
         self.create_cognito_user_pool(mfa_enabled, access_token_validity, cognito_users)
 
-        # Dependencies of the IDP Bedrock first-party code are included in idp_bedrock_deps layer (Lambda Powertools excluded)
+        # Dependencies of the IDP Bedrock are included in idp_bedrock_deps layer (Lambda Powertools excluded)
         self.idp_bedrock_code_layers = [
             self.layers.idp_bedrock,
             self.layers.idp_bedrock_deps,
@@ -356,7 +356,7 @@ class IDPBedrockAPIConstructs(Construct):
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
         )
-        
+
         ## ********* Run BDA *********
         self.bda_lambda = _lambda.Function(
             self,
@@ -558,10 +558,7 @@ class IDPBedrockAPIConstructs(Construct):
             statements=[
                 iam.PolicyStatement(
                     actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                    resources=[
-                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*:*",
-                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*",
-                    ],
+                    resources=["*"],
                 )
             ]
         )

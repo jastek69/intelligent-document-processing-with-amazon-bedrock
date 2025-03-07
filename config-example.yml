@@ -2,6 +2,7 @@
 # Please read the comments for detailed description of the configuration
 
 stack_name: idp-bedrock  # Used as stack name and prefix for resources (<16 chars, cannot start with "aws")
+stack_region: us-west-2  # Region where the CloudFormation stack will be deployed
 
 lambda:
   architecture: X86_64         # The system architectures compatible with the Lambda functions X86_64 or ARM_64
@@ -26,7 +27,8 @@ textract:
 bedrock:
   region: us-west-2              # Region of Amazon Bedrock
   model_ids:                     # List of enabled Bedrock models (must be available model IDs in Bedrock console)
-    - us.anthropic.claude-3-5-sonnet-20241022-v2:0  # The first model in the list is pre-selected by default in the UI
+    - us.anthropic.claude-3-7-sonnet-20250219-v1:0   # The first model in the list is pre-selected by default in the UI
+    - us.anthropic.claude-3-5-sonnet-20241022-v2:0
     # - us.anthropic.claude-3-5-haiku-20241022-v1:0
     # - us.anthropic.claude-3-opus-20240229-v1:0
     # - us.anthropic.claude-3-sonnet-20240229-v1:0
@@ -55,7 +57,7 @@ authentication:               # Authentication settings for the Streamlit fronte
   MFA: False                  # Set to True/False to enable/disable multi-factor authentication
   access_token_validity: 720  # Time until access token expires and a user is logged out (in minutes)
   users:                      # List of user emails to be created in Cognito with the access to the web app
-    - XXX@XXX.com
+    - kozodoi@amazon.de
 
 streamlit:
   deploy_streamlit: True         # Whether to deploy Streamlit frontend on ECS

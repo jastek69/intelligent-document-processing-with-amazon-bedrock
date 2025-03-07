@@ -5,42 +5,39 @@ File content:
     Attribute extraction utils
 """
 
-import warnings
-
 from griptape.tokenizers import AmazonBedrockTokenizer
+
 
 def token_count_tokenizer(text: str, model: str) -> int:
     tokenizer = AmazonBedrockTokenizer(model=model)
-    token_count = tokenizer.count_tokens(text)
-    return token_count
+    return tokenizer.count_tokens(text)
 
 
 def get_max_input_token(model: str) -> int:
     try:
         if not isinstance(model, str):
             raise ValueError("Model parameter must be a string")
-            
+
         if not model:
             raise ValueError("Model parameter cannot be empty")
-        
+
         model = model.removeprefix("us.").removeprefix("eu.")
-            
+
         tokenizer = AmazonBedrockTokenizer(model=model)
         max_tokens = None
-        
+
         for prefix in AmazonBedrockTokenizer.MODEL_PREFIXES_TO_MAX_INPUT_TOKENS:
             if tokenizer.model.startswith(prefix):
                 max_tokens = AmazonBedrockTokenizer.MODEL_PREFIXES_TO_MAX_INPUT_TOKENS[prefix]
                 break
-                
+
         if max_tokens is None:
             raise ValueError(f"No matching token limit found for model: {model}")
-            
-        return max_tokens
-        
-    except Exception as e:
-        raise Exception(f"Error getting max input tokens: {str(e)}")
 
+        return max_tokens
+
+    except Exception as e:
+        raise Exception(f"Error getting max input tokens: {str(e)}")  # noqa: B904
 
 
 def truncate_document(
@@ -98,7 +95,7 @@ def truncate_document(
     return truncated_doc
 
 
-def format_few_shots(few_shots: list = []) -> dict:
+def format_few_shots(few_shots: list = []) -> dict:  # noqa: B006
     """
     Formats the few shots into a string
 
@@ -113,6 +110,7 @@ def format_few_shots(few_shots: list = []) -> dict:
         the formatted few shots
     """
     few_shots_dic = {}
+
     for i, shot in enumerate(few_shots):
         few_shots_dic[f"few_shot_input_{i}"] = shot["input"]
         few_shots_dic[f"few_shot_output_{i}"] = shot["output"]
@@ -121,7 +119,11 @@ def format_few_shots(few_shots: list = []) -> dict:
 
 
 def filled_prompt(
-    few_shots: list = [], attributes: str = "", template: str = "", instructions: str = "", document: str = ""
+    few_shots: list = [],  # noqa: B006
+    attributes: str = "",
+    template: str = "",
+    instructions: str = "",
+    document: str = "",
 ) -> str:
     """
     Fills the prompt template with the few shots and attributes

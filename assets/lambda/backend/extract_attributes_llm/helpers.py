@@ -1,4 +1,3 @@
-import base64
 from io import BytesIO
 
 from pdf2image import convert_from_path
@@ -38,7 +37,7 @@ def create_human_message_with_imgs(text, file=None, max_pages=20):
                         "format": "jpeg",
                         "source": {
                             "bytes": bytes_str,
-                        }
+                        },
                     },
                 },
             )
@@ -47,7 +46,7 @@ def create_human_message_with_imgs(text, file=None, max_pages=20):
 
 
 def fill_assistant_response_template(marking_json):
-    return f"<thinking>\nI was able to find all the requested attributes\n</thinking>\n<json>\n{json.dumps(marking_json)}\n</json>\n"
+    return f"<thinking>\nI was able to find all the requested attributes\n</thinking>\n<json>\n{json.dumps(marking_json)}\n</json>\n"  # noqa: E501
 
 
 def create_assistant_response(marking_file, original_file):

@@ -10,8 +10,7 @@ FEW_SHOTS_TABLE_NAME = os.environ["FEW_SHOTS_TABLE_NAME"]
 
 LOGGER = logging.Logger("Create-Dynamo-Entry", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
-HANDLER.setFormatter(logging.Formatter(
-"%(levelname)s | %(name)s | %(message)s"))
+HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
 
 
@@ -20,11 +19,7 @@ def create_dynamo_entry(table_name, example_name, s3_file_location, s3_marking_l
     # add date + time to example name
     example_id = example_name + "_" + datetime.now().strftime("%Y%m%d_%H%M%S")
     table.put_item(
-        Item={
-            "ExampleId": example_id,
-            "file_location": s3_file_location,
-            "marking_location": s3_marking_location
-        }
+        Item={"ExampleId": example_id, "file_location": s3_file_location, "marking_location": s3_marking_location}
     )
     return example_id
 

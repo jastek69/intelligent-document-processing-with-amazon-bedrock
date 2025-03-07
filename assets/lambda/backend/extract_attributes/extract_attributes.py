@@ -126,7 +126,7 @@ def lambda_handler(event, context):  # noqa: C901
             }
         )
         LOGGER.info(f"Few shot {i}: {shot}")
-        
+
     # build messages list
     for variable in prompt_variables:
         prompt_template = prompt_template.replace(f"{{{variable}}}", prompt_variables[variable])
