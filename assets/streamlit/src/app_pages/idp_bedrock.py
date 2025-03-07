@@ -531,7 +531,7 @@ with tab_docs:
     )
     if st.session_state["docs_input_type"] == "Upload documents":
         if st.session_state["parsing_mode"] == "Bedrock Data Automation":
-            st.warning("Parsing with Bedrock Data Automation only supports PDF files.")
+            st.warning("Parsing with Bedrock Data Automation only supports PDF files up to 20 pages.")
         if st.session_state["parsing_mode"] == "Amazon Bedrock LLM":
             st.warning(f"Parsing with Amazon Bedrock only supports selected Claude and Nova LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files.")
         files = st.file_uploader(

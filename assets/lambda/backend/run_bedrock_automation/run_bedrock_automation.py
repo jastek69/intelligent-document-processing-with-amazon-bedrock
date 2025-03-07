@@ -132,13 +132,21 @@ def lambda_handler(event, context):  # noqa: C901
     while status not in ["Success", "ServiceError", "ClientError"]:
         time.sleep(int(1))
         LOGGER.info(f"Waiting for data automation job to complete...")
-        status_response = BDA_RUNTIME_CLIENT.get_data_automation_status(
-            invocationArn=invocationArn
-        )
+
+        try:
+            status_response = BDA_RUNTIME_CLIENT.get_data_automation_status(
+                invocationArn=invocationArn
+            )
+            LOGGER.info(f"Data automation job status response: {status_response}")
+        except Exception as e:
+            LOGGER.error(f"Error getting data automation job status: {e}")
+            raise
+
         status = status_response["status"]
         LOGGER.info(f"Data automation job status: {status}")
         if status in ["ServiceError", "ClientError"]:
-            raise Exception("Data automation job failed")
+            raise Exception(status_response.get("errorMessage", "Data automation job failed"))
+
     LOGGER.info(f"Data automation job completed with status: {status}")
 
     job_metadata_s3_location = status_response["outputConfiguration"]["s3Uri"]

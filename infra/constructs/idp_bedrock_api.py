@@ -558,10 +558,7 @@ class IDPBedrockAPIConstructs(Construct):
             statements=[
                 iam.PolicyStatement(
                     actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-                    resources=[
-                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*:*",
-                        f"arn:aws:logs:{Aws.REGION}:{Aws.ACCOUNT_ID}:log-group:/aws/vendedlogs/*",
-                    ],
+                    resources=["*"],
                 )
             ]
         )
