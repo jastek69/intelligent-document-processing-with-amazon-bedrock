@@ -32,7 +32,8 @@ def get_max_input_token(model: str) -> int:
                 break
 
         if max_tokens is None:
-            raise ValueError(f"No matching token limit found for model: {model}")
+            print(f"No matching token limit found for model: {model}")
+            max_tokens = 100_000
 
         return max_tokens
 

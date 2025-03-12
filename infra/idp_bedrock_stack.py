@@ -125,17 +125,12 @@ class IDPBedrockStack(Stack):
 
         ## ********** Bedrock configs ***********
         bedrock_region = kwargs["env"].region
-        textract_region = kwargs["env"].region
+        textract_region = config["stack_region"]
 
         if "bedrock" in config:
             if "region" in config["bedrock"]:
                 bedrock_region = (
                     kwargs["env"].region if config["bedrock"]["region"] == "None" else config["bedrock"]["region"]
-                )
-        if "textract" in config:
-            if "region" in config["textract"]:
-                textract_region = (
-                    kwargs["env"].region if config["textract"]["region"] == "None" else config["textract"]["region"]
                 )
 
         ## ********** Textract configs ***********

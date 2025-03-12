@@ -1,2 +1,2 @@
-amazon-textract-textractor==1.7.9
+amazon-textract-textractor==1.9.0
 s3fs

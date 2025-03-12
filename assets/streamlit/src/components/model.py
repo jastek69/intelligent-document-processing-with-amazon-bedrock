@@ -39,6 +39,8 @@ MODEL_IDS = {
     "Claude 3.5 Haiku": "anthropic.claude-3-5-haiku-20241022-v1:0",
     "Claude 3 Opus": "anthropic.claude-3-opus-20240229-v1:0",
     "Claude Instant": "anthropic.claude-instant-v1",
+    # DeepSeek Models
+    "DeepSeek-R1": "deepseek.r1-v1:0",
     # Cohere Models
     "Command": "cohere.command-text-v14",
     "Command Light": "cohere.command-light-text-v14",

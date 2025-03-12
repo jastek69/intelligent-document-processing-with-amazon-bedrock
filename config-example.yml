@@ -15,7 +15,6 @@ s3:
   kms_key_arn: None            # Creates new KMS key if set to None, requires encryption=SSE-KMS
 
 textract:
-  region: us-east-1             # Region of Amazon Textract
   use_table: True               # Whether to do advanced table processing in Textract, True or False
   table_flatten_headers: True                 # Textract table processing options
   table_remove_column_headers: True           # Textract table processing options
@@ -36,6 +35,7 @@ bedrock:
     - us.amazon.nova-pro-v1:0
     - us.amazon.nova-lite-v1:0
     - us.amazon.nova-micro-v1:0
+    - us.deepseek.r1-v1:0
     # - us.meta.llama3-2-90b-instruct-v1:0
     # - us.meta.llama3-2-11b-instruct-v1:0
     # - us.meta.llama3-2-3b-instruct-v1:0
