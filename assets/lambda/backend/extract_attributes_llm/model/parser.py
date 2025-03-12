@@ -36,7 +36,8 @@ def parse_bedrock_response(response: dict) -> str:
     Parse Bedrock converse API output
     """
     replies = response["output"]["message"]["content"]
-    if not len(replies) == 1:
-        raise ValueError("Model has returned multiple or no content blocks in this response.")
-
+    if 1 < len(replies):
+        replies = [reply for reply in replies if "text" in reply]  # handle claude 3.7
+        if len(replies) != 1:
+            raise ValueError(f"Model has returned {len(replies)} text blocks in the response.")
     return replies[0]["text"].strip()
