@@ -241,9 +241,9 @@ The following diagram illustrates the high-level architecture of this solution:
 
 **Contributors:**
 
-| ![image](team/romain.jpeg) | ![image](team/zainab.jpeg) | ![image](team/egor.jpeg) | ![image](team/huong.jpeg) | ![image](team/aiham.jpeg) | ![image](team/elizaveta.jpeg) | ![image](team/ennio.jpeg) |
-|---|---|---|---|---|---|---|
-| [Romain Besombes](https://www.linkedin.com/in/romainbesombes/) | [Zainab Afolabi](https://www.linkedin.com/in/zainabafolabi/) | [Egor Krasheninnikov](https://www.linkedin.com/in/egorkrash/) | [Huong Vu](https://www.linkedin.com/in/huong-vu/) | [Aiham Taleb](https://www.linkedin.com/in/aihamtaleb/) | [Elizaveta Zinovyeva](https://www.linkedin.com/in/zinov-liza/) | [Ennio Pastore](https://www.linkedin.com/in/enniopastore/) |
+| ![image](team/romain.jpeg) | ![image](team/zainab.jpeg) | ![image](team/egor.jpeg) | ![image](team/huong.jpeg) | ![image](team/aiham.jpeg) | ![image](team/elizaveta.jpeg) | ![image](team/babs.jpeg) | ![image](team/ennio.jpeg) |
+|---|---|---|---|---|---|---|---|
+| [Romain Besombes](https://www.linkedin.com/in/romainbesombes/) | [Zainab Afolabi](https://www.linkedin.com/in/zainabafolabi/) | [Egor Krasheninnikov](https://www.linkedin.com/in/egorkrash/) | [Huong Vu](https://www.linkedin.com/in/huong-vu/) | [Aiham Taleb](https://www.linkedin.com/in/aihamtaleb/) | [Elizaveta Zinovyeva](https://www.linkedin.com/in/zinov-liza/) | [Babs Khalidson](https://www.linkedin.com/in/babskhalidson/) | [Ennio Pastore](https://www.linkedin.com/in/enniopastore/) |
 
 **Acknowledgements:**
 
