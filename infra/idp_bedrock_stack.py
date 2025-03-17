@@ -53,6 +53,8 @@ class IDPBedrockStack(Stack):
             self._runtime = _lambda.Runtime.PYTHON_3_11
         elif python_runtime == "PYTHON_3_12":
             self._runtime = _lambda.Runtime.PYTHON_3_12
+        elif python_runtime == "PYTHON_3_13":
+            self._runtime = _lambda.Runtime.PYTHON_3_13
         else:
             raise RuntimeError("Select a Python version >= PYTHON_3_9")
 

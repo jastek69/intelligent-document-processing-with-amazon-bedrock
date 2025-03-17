@@ -275,7 +275,11 @@ class IDPBedrockStreamlitStack(NestedStack):
         # ECS cluster and service definition
 
         cluster = ecs.Cluster(
-            self, "Cluster", enable_fargate_capacity_providers=True, vpc=self.vpc, container_insights=True
+            self,
+            "Cluster",
+            enable_fargate_capacity_providers=True,
+            vpc=self.vpc,
+            container_insights=True,
         )
 
         alb_suffix = "" if open_to_public_internet else "-priv"

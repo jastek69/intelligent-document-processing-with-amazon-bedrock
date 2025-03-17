@@ -242,6 +242,7 @@ class IDPBedrockAPIConstructs(Construct):
             "account_recovery": cognito.AccountRecovery.EMAIL_ONLY,
             "advanced_security_mode": cognito.AdvancedSecurityMode.ENFORCED,
             "sign_in_aliases": cognito.SignInAliases(email=True),
+            "feature_plan": cognito.FeaturePlan.PLUS,
         }
 
         if mfa_enabled:
@@ -328,7 +329,7 @@ class IDPBedrockAPIConstructs(Construct):
             table_class=ddb.TableClass.STANDARD,
             billing_mode=ddb.BillingMode("PAY_PER_REQUEST"),
             removal_policy=RemovalPolicy.DESTROY,
-            point_in_time_recovery=True,
+            # point_in_time_recovery=True,
         )
 
     ## **************** Lambda Functions ****************
