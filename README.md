@@ -115,6 +115,7 @@ streamlit:
   deploy_streamlit: True
 ```
 
+
 ### 5. Configure Bedrock Model Access
 
 - Open the target AWS account
@@ -210,7 +211,7 @@ or
 You can run the Streamlit frontend locally for testing and development by following these steps:
 
 - Deploy the CDK stack once
-- Copy ```assets/streamlit/.env.example``` to ```assets/streamlit/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
+- Go to ```assets/streamlit/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
 - Provide AWS credentials
   - You can add AWS credentials to the ```assets/streamlit/.env``` file
   - Or simply export credentials in your terminal, e.g. ```export AWS_PROFILE=<profile>```
