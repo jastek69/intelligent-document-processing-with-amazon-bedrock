@@ -66,7 +66,7 @@ def lambda_handler(event, context):  # noqa: C901
     # format attributes
     attributes = body["attributes"]
     formatted_attributes = {
-        item["name"]: {"type": "string", "inferenceType": "generative", "description": item["description"]}
+        item["name"]: {"type": "string", "inferenceType": "inferred", "instruction": item["description"]}
         for item in attributes
     }
 
@@ -78,8 +78,9 @@ def lambda_handler(event, context):  # noqa: C901
     blueprint_stage = "LIVE"
     blueprint_schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",
-        "documentClass": "custom-document-type",
         "description": blueprint_description,
+        "class": "custom-document-class",
+        "type": "object",
         "definitions": {},
         "properties": formatted_attributes,
     }
@@ -116,6 +117,7 @@ def lambda_handler(event, context):  # noqa: C901
         inputConfiguration={"s3Uri": file_source},
         outputConfiguration={"s3Uri": f"s3://{S3_BUCKET}/bda-outputs"},
         blueprints=[{"blueprintArn": blueprint_arn}],
+        dataAutomationProfileArn=f"arn:aws:bedrock:{BEDROCK_REGION}:{S3_BUCKET.rsplit('-', 1)[-1]}:data-automation-profile/us.data-automation-v1",  # noqa: E501
     )
     invocationArn = response["invocationArn"]
     LOGGER.info(f"Invoked data automation job with invocation arn {invocationArn}")
@@ -153,10 +155,10 @@ def lambda_handler(event, context):  # noqa: C901
     response = S3_CLIENT.get_object(Bucket=s3_uri_parts[0], Key=s3_uri_parts[1])
     custom_outputs_json = json.loads(response["Body"].read().decode("utf-8"))
     attributes = custom_outputs_json["inference_result"]
-
+    escaped_attributes = json.dumps(attributes).replace('"', '&quot;')
     raw_answer = "<thinking>No explanation available when using Bedrock Data Automation./</thinking>"
-    raw_answer += f"<json>{json.dumps(attributes)}</json>"
-
+    raw_answer += f"<json>{escaped_attributes}</json>"
+    
     json_data = json.dumps(
         {
             "answer": attributes,
