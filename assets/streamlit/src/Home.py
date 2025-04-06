@@ -13,7 +13,6 @@ import streamlit as st
 from components.ssm import load_ssm_params
 from dotenv import dotenv_values, load_dotenv
 from components.styling import set_page_styling
-from components.s3 import create_presigned_url
 from st_pages import add_indentation, show_pages_from_config
 
 # For local testing only
@@ -41,8 +40,7 @@ LOGGER.addHandler(HANDLER)
 #     COVER & CONFIG
 #########################
 
-COVER_IMAGE_URL = os.environ.get("COVER_IMAGE_URL")
-COVER_IMAGE = create_presigned_url(COVER_IMAGE_URL)
+COVER_IMAGE = os.environ.get("COVER_IMAGE_URL")
 ASSISTANT_AVATAR = os.environ.get("ASSISTANT_AVATAR_URL")
 PAGE_TITLE = "IDP Bedrock"
 PAGE_ICON = ":sparkles:"

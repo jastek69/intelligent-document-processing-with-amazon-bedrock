@@ -55,9 +55,11 @@ S3_CLIENT = boto3.client("s3")
 
 # Create NLTK_DATA directory
 os.makedirs(NLTK_DATA, exist_ok=True)
+os.environ["NLTK_DATA"] = NLTK_DATA
 nltk.data.path.append(NLTK_DATA)
 nltk.download("punkt", download_dir=NLTK_DATA)
 nltk.download("averaged_perceptron_tagger", download_dir=NLTK_DATA)
+nltk.download("punkt_tab", download_dir=NLTK_DATA)
 
 
 #########################
@@ -87,7 +89,7 @@ def lambda_handler(event, context):  # noqa: C901
 
     if doc_text is None:
         object_path = pathlib.Path(file_name)
-        local_file_path = f"/tmp/{file_name.split('/', 1)[-1]}"
+        local_file_path = os.path.join(TMP_DIR, file_name.split("/", 1)[-1])
 
         # load document
         LOGGER.info(f"Loading doc {file_name}")

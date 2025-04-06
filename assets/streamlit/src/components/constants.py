@@ -45,12 +45,3 @@ SUPPORTED_EXTENSIONS_BEDROCK = [
     "png",
     "jpg",
 ]
-
-OFFICE_EXTENSIONS = [
-    "docx",
-    "doc",
-    "ppt",
-    "pptx",
-    "xls",
-    "xlsx",
-]

@@ -524,6 +524,7 @@ def sign_out() -> None:
                     "client_id": CLIENT_ID,
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=60,
             )
             if response.status_code != 200:
                 LOGGER.error(f"Failed to revoke token: {response.text}")
@@ -615,7 +616,7 @@ def exchange_code_for_token(code: str, token_endpoint: str, prod_direct_uri: str
 
     try:
         LOGGER.debug(f"Requesting token from {token_endpoint}")
-        resp = requests.post(token_endpoint, data=data, headers=headers)
+        resp = requests.post(token_endpoint, data=data, headers=headers, timeout=60)
         LOGGER.debug(f"Response status: {resp.status_code}, resp headers: {resp.headers}")
         if resp.status_code == 200:
             return resp.json()

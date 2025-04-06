@@ -6,7 +6,7 @@ stack_region: us-west-2  # Region where the CloudFormation stack will be deploye
 
 lambda:
   architecture: X86_64         # The system architectures compatible with the Lambda functions X86_64 or ARM_64
-  python_runtime: PYTHON_3_12  # Python runtime for Lambda function
+  python_runtime: PYTHON_3_13  # Python runtime for Lambda function
 
 s3:
   use_existing_bucket: False   # Use an existing bucket, otherwise create a new bucket, True or False
@@ -68,4 +68,4 @@ streamlit:
   cover_image_url: app/static/cover_image.jpeg  # custom cover image on app pages
   assistant_avatar: https://d1.awsstatic.com/products/bedrock/icon_64_amazonbedrock.302e08f0c3cd2a11d37eb3d77cb894bc5ceff8e4.png  # avatar of the chatbot
 
-cdk_nag: False # Enable cdk_nag check, True or False
+cdk_nag: True # Enable cdk_nag check, True or False

@@ -20,7 +20,7 @@ def create_human_message_with_imgs(text, file=None, max_pages=20):
         if file.lower().endswith(".pdf"):
             bytes_strs = get_base64_encoded_images_from_pdf(file)
         elif file.lower().endswith(".jpeg") or file.lower().endswith(".jpg") or file.lower().endswith(".png"):
-            with open(file, "rb") as image_file:
+            with open(file, "rb", encoding="utf-8") as image_file:
                 binary_data = image_file.read()
                 bytes_strs = [binary_data]
 
@@ -52,7 +52,7 @@ def fill_assistant_response_template(marking_json):
 def create_assistant_response(marking_file, original_file):
     file_key = original_file.split("/")[-1]
     content = None
-    with open(marking_file) as f:
+    with open(marking_file, encoding="utf-8") as f:
         marking_json = json.load(f)
         if isinstance(marking_json, list):
             for item in marking_json:

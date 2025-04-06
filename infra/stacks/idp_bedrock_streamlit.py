@@ -122,7 +122,7 @@ class IDPBedrockStreamlitStack(NestedStack):
         self.ssm_state_machine_arn = ssm_state_machine_arn
         self.state_machine_name = state_machine_name
         self.ssm_cognito_domain = ssm_cognito_domain
-
+        self.nag_suppressed_resources = []
         self.docker_asset = self.build_docker_push_ecr()
 
         # Name and value of the custom header to be used for authentication
@@ -146,6 +146,16 @@ class IDPBedrockStreamlitStack(NestedStack):
                     }
                 ),
             ],
+        )
+        NagSuppressions.add_resource_suppressions(
+            self.nag_suppressed_resources,
+            [
+                NagPackSuppression(
+                    id="AwsSolutions-IAM5",
+                    reason="All IAM policies defined in this solution grant only least-privilege permissions. Wild card for resources is used only for services which do not have a resource arn",  # noqa: E501
+                )
+            ],
+            apply_to_children=True,
         )
 
         # Add to hosted UI in Cognito Console:
@@ -349,7 +359,15 @@ class IDPBedrockStreamlitStack(NestedStack):
         s3_docpolicy = iam.PolicyDocument(
             statements=[
                 iam.PolicyStatement(
-                    actions=["s3:GetObject*", "s3:GetBucket*", "s3:List*", "s3:PutObject*", "s3:DeleteObject*"],
+                    actions=[
+                        "s3:GetObject*",
+                        "s3:GetBucket*",
+                        "s3:List*",
+                        "s3:PutObject*",
+                        "s3:DeleteObject*",
+                        "s3:GetObject",
+                        "s3:ListBucket",
+                    ],
                     resources=[self.s3_data_bucket.bucket_arn, self.s3_data_bucket.bucket_arn + "/*"],
                     effect=iam.Effect.ALLOW,
                 ),
@@ -361,14 +379,9 @@ class IDPBedrockStreamlitStack(NestedStack):
             policy_name=f"{self.stack_name}-s3-access",
             document=s3_docpolicy,
         )
+        # Added to suppressing list given we should provide customers access to all models by default
+        self.nag_suppressed_resources.append(s3_policy)
         task_execution_role.attach_inline_policy(s3_policy)
-
-        task_execution_role.add_to_policy(
-            iam.PolicyStatement(
-                actions=["s3:GetObject", "s3:ListBucket"],
-                resources=[self.s3_data_bucket.bucket_arn, f"{self.s3_data_bucket.bucket_arn}/*"],
-            )
-        )
 
         ecs_log_driver = ecs.LogDrivers.aws_logs(
             stream_prefix="AwsLogsLogDriver", log_group=log_group.log_group

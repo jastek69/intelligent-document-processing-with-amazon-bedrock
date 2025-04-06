@@ -53,7 +53,6 @@ from components.constants import (
     MAX_CHARS_NAME,
     MAX_DOCS,
     MAX_FEW_SHOTS,
-    OFFICE_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
     TEMPERATURE_DEFAULT,
@@ -77,8 +76,7 @@ authenticate.set_st_state_vars()
 #########################
 
 # titles
-COVER_IMAGE_URL = os.environ.get("COVER_IMAGE_URL")
-COVER_IMAGE = create_presigned_url(COVER_IMAGE_URL)
+COVER_IMAGE = os.environ.get("COVER_IMAGE_URL")
 ASSISTANT_AVATAR = os.environ.get("ASSISTANT_AVATAR_URL")
 PAGE_TITLE = "IDP Bedrock"
 PAGE_ICON = ":sparkles:"
@@ -446,45 +444,48 @@ def run_extraction() -> None:
 # sidebar
 with st.sidebar:
     st.header("Settings")
-    st.subheader("Information Extraction")
-    st.selectbox(
-        label="Parsing algorithm:",
-        options=["Bedrock Data Automation", "Amazon Bedrock LLM", "Amazon Textract"],
-        key="parsing_mode",
-    )
-    st.selectbox(
-        label="Language model:",
-        options=list(MODEL_SPECS.keys())
-        if st.session_state["parsing_mode"] != "Amazon Bedrock LLM"
-        else [m for m in list(MODEL_SPECS.keys()) if "Claude" in m or "Nova" in m],
-        key="ai_model",
-        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
-    )
-    st.slider(
-        label="Temperature:",
-        value=TEMPERATURE_DEFAULT,
-        min_value=0.0,
-        max_value=1.0,
-        key="temperature",
-        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
-    )
+    with st.expander("**🧠 Information Extraction**", expanded=True):
+        st.selectbox(
+            label="Parsing algorithm:",
+            options=["Bedrock Data Automation", "Amazon Bedrock LLM", "Amazon Textract"],
+            key="parsing_mode",
+        )
+        st.selectbox(
+            label="Language model:",
+            options=list(MODEL_SPECS.keys())
+            if st.session_state["parsing_mode"] != "Amazon Bedrock LLM"
+            else [m for m in list(MODEL_SPECS.keys()) if "Claude" in m or "Nova" in m],
+            key="ai_model",
+            disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
+        )
+        st.slider(
+            label="Temperature:",
+            value=TEMPERATURE_DEFAULT,
+            min_value=0.0,
+            max_value=1.0,
+            key="temperature",
+            disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
+        )
     st.markdown("")
-    st.subheader("Additional Inputs")
-    st.checkbox(
-        label="Enable advanced mode",
-        key="advanced_mode",
-        help="Allows adding document-level instructions and few-shot examples to improve extraction accuracy",
-        disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
-    )
-    st.markdown("")
-    st.subheader("Output Format")
-    st.radio(
-        label="Table format:",
-        options=["Long", "Wide"],
-        key="table_format",
-    )
 
-    with st.expander(":question: Read more"):
+    with st.expander("**⚙️ Additional Inputs**", expanded=False):
+        st.checkbox(
+            label="Enable advanced mode",
+            key="advanced_mode",
+            help="Allows adding document-level instructions and few-shot examples to improve accuracy",
+            disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
+        )
+    st.markdown("")
+
+    with st.expander("**📄 Output Format**", expanded=True):
+        st.radio(
+            label="Table format:",
+            options=["Long", "Wide"],
+            key="table_format",
+        )
+    st.markdown("")
+
+    with st.expander(":question: **Read more**"):
         st.markdown(
             """- **Language model**: which foundation model is used to analyze the document. Various models may have different accuracy and answer latency.
 - **Temperature**: temperature controls model creativity. Higher values results in more creative answers, while lower values make them more deterministic.
@@ -533,10 +534,16 @@ with tab_docs:
     )
     if st.session_state["docs_input_type"] == "Upload documents":
         if st.session_state["parsing_mode"] == "Bedrock Data Automation":
-            st.warning("Parsing with Bedrock Data Automation only supports PDF files up to 20 pages.")
+            st.info(
+                "ℹ️ Parsing with Bedrock Data Automation only supports PDF files up to 20 pages via the app. For other file extensions, use other parsing modes or visit the Amazon Bedrock console."  # noqa: E501
+            )  # noqa: E501
         if st.session_state["parsing_mode"] == "Amazon Bedrock LLM":
-            st.warning(
-                f"Parsing with Amazon Bedrock only supports selected Claude and Nova LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files."  # noqa: E501
+            st.info(
+                f"ℹ️ Parsing with Amazon Bedrock LLM only supports vision LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files. For other extensions, use other parsing modes or convert your files to PDF."  # noqa: E501
+            )
+        if st.session_state["parsing_mode"] == "Amazon Textract":
+            st.info(
+                "ℹ️ When parsing with Amazon Textract, only text content from Office documents is used. Convert to PDF to process visual information and complex layouts."  # noqa: E501
             )
         files = st.file_uploader(
             label="Upload your document(s):",
@@ -548,12 +555,6 @@ with tab_docs:
             if st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
             else SUPPORTED_EXTENSIONS,
         )
-        for file in files:
-            if any([file.name.endswith(i) for i in OFFICE_EXTENSIONS]):  # noqa: C419
-                st.info(
-                    "ℹ️ Only text content from Office documents is used. Convert to PDF to process visual information."
-                )
-            break
         st.session_state["docs"] = files[::-1]
     else:
         docs_placeholder = st.empty()
