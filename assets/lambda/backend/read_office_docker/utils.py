@@ -97,7 +97,7 @@ def get_document_text(
     # read document from S3
     fs = s3fs.S3FileSystem(anon=False)
     try:
-        with fs.open(f"{bucket_name}/{doc_uri}", "rb") as f:
+        with fs.open(f"{bucket_name}/{doc_uri}", "rb", encoding="utf-8") as f:
             s3_object = f.read()
     except:  # noqa: E722
         print(f"Could not find {doc_uri} in {bucket_name}")

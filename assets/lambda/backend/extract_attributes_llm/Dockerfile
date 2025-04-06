@@ -3,12 +3,12 @@
 # File content:
 #       Docker image of the Lambda container
 
-FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.11
+FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.13
 
 # Install the specified packages
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 RUN pip install --no-cache-dir -r requirements.txt
-RUN yum install -y poppler-utils && yum clean all
+RUN dnf install -y poppler-utils && dnf clean all
 
 # Copy function code
 COPY . ${LAMBDA_TASK_ROOT}
