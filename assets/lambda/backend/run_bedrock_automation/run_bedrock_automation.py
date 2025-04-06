@@ -16,6 +16,7 @@ import sys
 import time
 import boto3
 from botocore.config import Config
+from markupsafe import Markup, escape
 
 LOGGER = logging.Logger("BEDROCK-AUTOMATION", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
@@ -155,10 +156,15 @@ def lambda_handler(event, context):  # noqa: C901
     response = S3_CLIENT.get_object(Bucket=s3_uri_parts[0], Key=s3_uri_parts[1])
     custom_outputs_json = json.loads(response["Body"].read().decode("utf-8"))
     attributes = custom_outputs_json["inference_result"]
-    escaped_attributes = json.dumps(attributes).replace('"', '&quot;')
-    raw_answer = "<thinking>No explanation available when using Bedrock Data Automation./</thinking>"
-    raw_answer += f"<json>{escaped_attributes}</json>"
-    
+
+    # nosec - HTML is constructed with proper escaping
+    thinking_part = Markup("<thinking>No explanation available when using Bedrock Data Automation.</thinking>")
+    json_content = escape(json.dumps(attributes))
+    # nosemgrep: tainted-html-string
+    json_part = Markup(f"<json>{json_content}</json>")
+    # nosemgrep: tainted-html-string
+    raw_answer = str(thinking_part) + str(json_part)
+
     json_data = json.dumps(
         {
             "answer": attributes,
