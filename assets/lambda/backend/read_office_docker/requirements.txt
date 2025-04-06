@@ -1,12 +1,12 @@
 urllib3<2
 lxml
 python-docx
-unstructured
 python-pptx
 nltk
 s3fs
 networkx
 pandas
 openpyxl
-langchain==0.3.0
-langchain-community==0.3.0
+unstructured==0.17.2
+langchain==0.3.23
+langchain-community==0.3.21
