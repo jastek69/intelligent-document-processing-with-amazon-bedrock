@@ -16,7 +16,6 @@ from aws_cdk import aws_kms as kms
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
-from aws_cdk import aws_s3_deployment as s3deploy
 from constructs import Construct
 
 from infra.constructs.idp_bedrock_api import IDPBedrockAPIConstructs
@@ -104,15 +103,6 @@ class IDPBedrockStack(Stack):
                 server_access_logs_prefix=f"buckets/{data_bucket_name}",
                 encryption=encryption,
                 enforce_ssl=True,
-            )
-
-            # Deploy the static assets
-            s3deploy.BucketDeployment(
-                scope=self,
-                id=f"{stack_name}-static-assets-deployment",
-                sources=[s3deploy.Source.asset("assets/static")],
-                destination_bucket=self.s3_data_bucket,
-                destination_key_prefix="images",
             )
 
         ## **************** Lambda layers ****************
@@ -203,7 +193,7 @@ class IDPBedrockStack(Stack):
             self,
             f"{stack_name}-SsmCoverImageUrl",
             parameter_name=f"/{stack_name}/ecs/COVER_IMAGE_URL",
-            string_value=f"s3://{self.s3_data_bucket.bucket_name}/images/cover_image.jpeg",
+            string_value=config["streamlit"]["cover_image_url"],
         )
         self.ssm_assistant_avatar_url = ssm.StringParameter(
             self,

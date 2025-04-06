@@ -334,15 +334,13 @@ class IDPBedrockAPIConstructs(Construct):
 
     ## **************** Lambda Functions ****************
     def create_lambda_functions(self):
-        ## ********* Get features *********
-        self.attributes_lambda = _lambda.Function(
+        ## ********* Extract from text lambda *********
+        self.attributes_lambda = _lambda.DockerImageFunction(
             self,
             f"{self.stack_name}-attributes-lambda",
-            runtime=self._python_runtime,
             architecture=self._architecture,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/extract_attributes"),
-            handler="extract_attributes.lambda_handler",
-            function_name=f"{self.stack_name}-extract-attributes",
+            code=_lambda.DockerImageCode.from_image_asset("./assets/lambda/backend/extract_attributes"),
+            function_name=f"{self.stack_name}-extract-attributes-text",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
             environment={
@@ -350,14 +348,12 @@ class IDPBedrockAPIConstructs(Construct):
                 "BEDROCK_REGION": self.bedrock_region,
             },
             role=self.lambda_attributes_role,
-            layers=self.idp_bedrock_code_layers,
         )
         self.attributes_lambda.add_alias(
             "Warm",
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
         )
-
         ## ********* Run BDA *********
         self.bda_lambda = _lambda.Function(
             self,
@@ -386,10 +382,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.read_office_lambda = _lambda.DockerImageFunction(
             self,
             f"{self.stack_name}-read_office-docker-lambda",
-            # runtime=self._python_runtime,
-            # architecture=self._architecture,
             code=_lambda.DockerImageCode.from_image_asset(directory="./assets/lambda/backend/read_office_docker"),
-            # handler="read_office.lambda_handler",
             function_name=f"{self.stack_name}-read_office_lambda",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
@@ -692,10 +685,11 @@ class IDPBedrockAPIConstructs(Construct):
         self.s3_read_write_files_policy = iam.Policy(
             self, f"{self.stack_name}-s3-read-write-policy", document=s3_read_write_files_document
         )
-        self.nag_suppressed_resources.append(self.s3_read_write_files_policy)
         self.lambda_attributes_role.attach_inline_policy(self.s3_read_write_files_policy)
         self.lambda_presigned_url_role.attach_inline_policy(self.s3_read_write_files_policy)
         self.lambda_textract_role.attach_inline_policy(self.s3_read_write_files_policy)
+        # Added to suppressing list given we are limiting the bucket in resources
+        self.nag_suppressed_resources.append(self.s3_read_write_files_policy)
 
     def create_stepfunction_role(self: str):
         ## ********* IAM Roles *********
