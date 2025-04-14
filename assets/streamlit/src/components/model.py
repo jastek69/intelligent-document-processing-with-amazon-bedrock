@@ -62,6 +62,7 @@ MODEL_IDS = {
     "Llama 3.2 11B": "meta.llama3-2-11b-instruct-v1:0",
     "Llama 3.2 90B": "meta.llama3-2-90b-instruct-v1:0",
     # Mistral AI Models
+    "Pixtral Large": "mistral.pixtral-large-2502-v1:0",
     "Mistral 7B": "mistral.mistral-7b-instruct-v0:2",
     "Mixtral 8x7B": "mistral.mixtral-8x7b-instruct-v0:1",
     "Mistral Large": "mistral.mistral-large-2402-v1:0",

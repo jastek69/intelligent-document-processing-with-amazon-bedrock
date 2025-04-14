@@ -17,17 +17,16 @@
 
 # 🔥 Overview
 
-Converting custom documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from internal documents, analyzing customer reviews, and more.
+Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from internal documents, analyzing customer reviews, and more.
 
 This repo provides an AWS CDK solution that extracts information from documents in minutes using generative AI.
 
-The solution has the following key features:
 - Extract different information types, including:
   - Well-defined entities (e.g., name, title)
   - Numeric scores (e.g., sentiment, urgency)
   - Free-form content (e.g., summary, suggested response)
 - Describe the attributes to be extracted from your docs without costly data annotation or model training
-- Leverage multi-modal LLMs on Amazon Bedrock and/or Amazon Textract for information extraction and OCR
+- Leverage Amazon Bedrock Data Automation, multi-modal LLMs on Amazon Bedrock, and/or Amazon Textract
 - Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo UI](assets/streamlit/src/Home.py) to process PDFs, MS Office, images, and get JSON output
 
 
@@ -107,7 +106,7 @@ source .venv/bin/activate
 Copy the `config-example.yml` to a `config.yml` file and specify your project name and modules you would like to deploy (e.g., whether to deploy a UI).
 
 ```yaml
-stack_name: idp-bedrock-stack   # Name of your demo, will be used as stack name and prefix for resources
+stack_name: idp-bedrock   # Name of your demo, will be used as stack name and prefix for resources
 
 ...
 
