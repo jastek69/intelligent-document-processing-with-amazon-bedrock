@@ -454,7 +454,7 @@ with st.sidebar:
             label="Language model:",
             options=list(MODEL_SPECS.keys())
             if st.session_state["parsing_mode"] != "Amazon Bedrock LLM"
-            else [m for m in list(MODEL_SPECS.keys()) if "Claude" in m or "Nova" in m],
+            else [m for m in list(MODEL_SPECS.keys()) if "Claude" in m or "Nova" in m or "Pixtral" in m],
             key="ai_model",
             disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
         )
