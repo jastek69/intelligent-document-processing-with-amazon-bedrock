@@ -16,6 +16,11 @@ repos:
     rev: v1.31.1
     hooks:
       - id: typos
+        exclude: |
+          (?x)^(
+            |diagram/.*
+            |demo/.*
+          )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.5
