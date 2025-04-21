@@ -139,16 +139,16 @@ def compile_tables(document: Document, logger: logging.Logger) -> Dict:
             duplicate_title = table_page_title.find(new_title) != -1
             duplicate_header = table_page_header.find(new_title) != -1
             if duplicate_title or duplicate_header:
-                new_title = f"table_{i+1}"
+                new_title = f"table_{i + 1}"
         else:
-            new_title = f"table_{i+1}"
+            new_title = f"table_{i + 1}"
         logger.debug(f"Final new table title: {new_title}")
 
         pandas_table = table.to_pandas(**kwargs)
         logger.debug(f"New column values: {pandas_table.columns.values}")
 
         if (
-            (new_title == last_title or new_title == f"table_{i+1}")
+            (new_title == last_title or new_title == f"table_{i + 1}")
             and table.column_count == len(last_valid_table_columns)
             and (
                 all(pandas_table.columns.values == last_valid_table_columns)

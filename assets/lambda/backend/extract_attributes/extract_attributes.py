@@ -82,7 +82,7 @@ def lambda_handler(event, context):  # noqa: C901
     LOGGER.info(f"few_shots : {few_shots}")
     attributes_str = ""
     for i in range(len(attributes)):
-        attributes_str += f"{i+1}. {attributes[i]['name']}: {attributes[i]['description']}"
+        attributes_str += f"{i + 1}. {attributes[i]['name']}: {attributes[i]['description']}"
         if "type" in attributes[i] and attributes[i]["type"].lower() != "auto":
             attributes_str += f" (must be {attributes[i]['type'].lower()})."
         attributes_str += "\n"

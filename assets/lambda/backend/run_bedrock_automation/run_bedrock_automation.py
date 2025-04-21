@@ -177,7 +177,7 @@ def lambda_handler(event, context):  # noqa: C901
     S3_CLIENT.put_object(
         Body=json_data,
         Bucket=S3_BUCKET,
-        Key=f"{PREFIX_ATTRIBUTES}/{body["file_name"].split('/', 1)[-1].rsplit('.', 1)[-1]}.json",
+        Key=f"{PREFIX_ATTRIBUTES}/{body['file_name'].split('/', 1)[-1].rsplit('.', 1)[-1]}.json",
         ContentType="application/json",
     )
 

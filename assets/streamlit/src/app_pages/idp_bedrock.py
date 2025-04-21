@@ -329,7 +329,7 @@ def process_response(parsed_response: list, wide=True) -> dict:
 
     if wide:
         for key in input_dict:
-            output_dict[f"doc_{key+1}"] = input_dict[key]
+            output_dict[f"doc_{key + 1}"] = input_dict[key]
 
     else:
         docs = [idx + 1 for idx in list(input_dict.keys())]
@@ -846,7 +846,7 @@ if st.session_state.get("raw_response"):
             url_original = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/originals/{file_name}")
             url_processed = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/processed/{processed_name}")
 
-            st.markdown(f"##### {idx+1}. {file_name}")
+            st.markdown(f"##### {idx + 1}. {file_name}")
             st.markdown("**Document**")
             if st.session_state["parsing_mode"] != "Bedrock Data Automation":
                 st.markdown(
