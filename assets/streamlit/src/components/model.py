@@ -19,6 +19,7 @@ MODEL_IDS = {
     "Nova Micro": "amazon.nova-micro-v1:0",
     "Nova Lite": "amazon.nova-lite-v1:0",
     "Nova Pro": "amazon.nova-pro-v1:0",
+    "Nova Premier": "amazon.nova-premier-v1:0",
     "Titan Text Express": "amazon.titan-text-express-v1",
     "Titan Text Lite": "amazon.titan-text-lite-v1",
     "Titan Text Premier": "amazon.titan-text-premier-v1:0",
@@ -61,6 +62,8 @@ MODEL_IDS = {
     "Llama 3.2 3B": "meta.llama3-2-3b-instruct-v1:0",
     "Llama 3.2 11B": "meta.llama3-2-11b-instruct-v1:0",
     "Llama 3.2 90B": "meta.llama3-2-90b-instruct-v1:0",
+    "Llama 4 Scout": "meta.llama4-scout-17b-instruct-v1:0",
+    "Llama 4 Maverick": "meta.llama4-maverick-17b-instruct-v1:0",
     # Mistral AI Models
     "Pixtral Large": "mistral.pixtral-large-2502-v1:0",
     "Mistral 7B": "mistral.mistral-7b-instruct-v0:2",
@@ -68,6 +71,9 @@ MODEL_IDS = {
     "Mistral Large": "mistral.mistral-large-2402-v1:0",
     "Mistral Large 2": "mistral.mistral-large-2407-v1:0",
     "Mistral Small": "mistral.mistral-small-2402-v1:0",
+    # Writer Models
+    "Palmyra X4": "writer.palmyra-x4-v1:0",
+    "Palmyra X5": "writer.palmyra-x5-v1:0",
 }
 
 
