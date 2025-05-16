@@ -73,6 +73,7 @@ Clone the repo to a location of your choice:
 git clone https://github.com/aws-samples/process-complex-documents-with-amazon-bedrock.git
 ```
 
+
 ### 2. Install Prerequisites
 
 When working from a SageMaker Notebook instance, run this script to install all missing requirements:
@@ -92,6 +93,7 @@ When working locally, make sure you have installed the following tools, language
 - [Python 3.12](https://www.python.org/downloads/release/python-3120/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
+
 ### 3. Activate the Environment
 
 Navigate to the project folder and execute the following script to create a virtualenv on MacOS or Linux and install dependencies:
@@ -100,6 +102,9 @@ Navigate to the project folder and execute the following script to create a virt
 sh install_env.sh
 source .venv/bin/activate
 ```
+
+Note: if you encounter `line 1: python3: command not found`, change `python3` in `install_env.sh` to your Python alias.
+
 
 ### 4. Configure the Stack
 
@@ -141,6 +146,9 @@ Make sure the Docker daemon is running in case you deploy the Streamlit frontend
 ```bash
 cdk deploy --profile [PROFILE_NAME]
 ```
+
+Note: if you encounter `/bin/sh: python3: command not found`, change `python3` in `cdk.json` to your Python alias.
+
 
 ### 8. Update Cognito URLs
 
