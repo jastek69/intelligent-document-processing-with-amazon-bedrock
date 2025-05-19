@@ -242,7 +242,7 @@ class IDPBedrockAPIConstructs(Construct):
             "account_recovery": cognito.AccountRecovery.EMAIL_ONLY,
             "advanced_security_mode": cognito.AdvancedSecurityMode.ENFORCED,
             "sign_in_aliases": cognito.SignInAliases(email=True),
-            # "feature_plan": cognito.FeaturePlan.PLUS,
+            "feature_plan": cognito.FeaturePlan.PLUS,
         }
 
         if mfa_enabled:
