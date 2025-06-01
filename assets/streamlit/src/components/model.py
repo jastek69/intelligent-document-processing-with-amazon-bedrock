@@ -30,16 +30,18 @@ MODEL_IDS = {
     "Titan Image Generator v2": "amazon.titan-image-generator-v2:0",
     "Amazon Rerank": "amazon.rerank-v1:0",
     # Anthropic Models
+    "Claude Instant": "anthropic.claude-instant-v1",
     "Claude 2.0": "anthropic.claude-v2",
     "Claude 2.1": "anthropic.claude-v2:1",
+    "Claude 3 Haiku": "anthropic.claude-3-haiku-20240307-v1:0",
     "Claude 3 Sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "Claude 3 Opus": "anthropic.claude-3-opus-20240229-v1:0",
+    "Claude 3.5 Haiku": "anthropic.claude-3-5-haiku-20241022-v1:0",
     "Claude 3.5 Sonnet": "anthropic.claude-3-5-sonnet-20240620-v1:0",
     "Claude 3.5 Sonnet (V2)": "anthropic.claude-3-5-sonnet-20241022-v2:0",
     "Claude 3.7 Sonnet": "anthropic.claude-3-7-sonnet-20250219-v1:0",
-    "Claude 3 Haiku": "anthropic.claude-3-haiku-20240307-v1:0",
-    "Claude 3.5 Haiku": "anthropic.claude-3-5-haiku-20241022-v1:0",
-    "Claude 3 Opus": "anthropic.claude-3-opus-20240229-v1:0",
-    "Claude Instant": "anthropic.claude-instant-v1",
+    "Claude 4 Sonnet": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "Claude 4 Opus": "anthropic.claude-opus-4-20250514-v1:0",
     # DeepSeek Models
     "DeepSeek-R1": "deepseek.r1-v1:0",
     # Cohere Models
@@ -89,9 +91,12 @@ def get_model_names(bedrock_model_ids: list[str]) -> Dict[str, str]:
     for model_id in bedrock_model_ids:
         if model_id.startswith(("us.", "eu.")):
             base_id = model_id.split(".", 1)[1]
-            if base_id in MODEL_IDS.values():
-                result[id_to_name[base_id]] = model_id
-        elif model_id in MODEL_IDS.values():
-            result[id_to_name[model_id]] = model_id
+        else:
+            base_id = model_id
+            
+        if base_id in MODEL_IDS.values():
+            result[id_to_name[base_id]] = model_id
+        else:
+            result[base_id] = model_id
 
     return result
