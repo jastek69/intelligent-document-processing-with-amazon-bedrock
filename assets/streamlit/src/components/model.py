@@ -93,7 +93,7 @@ def get_model_names(bedrock_model_ids: list[str]) -> Dict[str, str]:
             base_id = model_id.split(".", 1)[1]
         else:
             base_id = model_id
-            
+
         if base_id in MODEL_IDS.values():
             result[id_to_name[base_id]] = model_id
         else:
