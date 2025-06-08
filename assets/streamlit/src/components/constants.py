@@ -45,3 +45,24 @@ SUPPORTED_EXTENSIONS_BEDROCK = [
     "png",
     "jpg",
 ]
+
+SAMPLE_ATTRIBUTES = [
+    {
+        "name": "Party Names",
+        "description": "Names of all parties involved in the contract, including full legal names",
+    },
+    {
+        "name": "Contract Date",
+        "description": "The effective date or execution date of the contract",
+    },
+    {
+        "name": "Contract Value",
+        "description": "The total monetary value or consideration specified in the contract",
+    },
+    {
+        "name": "Governing Law",
+        "description": "The jurisdiction and legal system that governs the enforcement of the contract",
+    },
+]
+
+SAMPLE_PDFS = ["rental_agreement_contract.pdf", "service_agreement_contract.pdf", "employment_contract.pdf"]

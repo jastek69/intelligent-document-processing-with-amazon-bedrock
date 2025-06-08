@@ -11,6 +11,7 @@ File content:
 #########################
 
 import asyncio
+import base64
 import datetime
 import json
 import logging
@@ -53,6 +54,8 @@ from components.constants import (
     MAX_CHARS_NAME,
     MAX_DOCS,
     MAX_FEW_SHOTS,
+    SAMPLE_ATTRIBUTES,
+    SAMPLE_PDFS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
     TEMPERATURE_DEFAULT,
@@ -312,6 +315,10 @@ def fill_few_shots_fields(idx: int) -> None:
     }
 
 
+def make_read_fn(content):
+    return lambda self=None: content
+
+
 def process_response(parsed_response: list, wide=True) -> dict:
     """
     Process JSON file returned by IDP Bedrock
@@ -444,11 +451,12 @@ def run_extraction() -> None:
 # sidebar
 with st.sidebar:
     st.header("Settings")
-    with st.expander("**🧠 Information Extraction**", expanded=True):
+    with st.expander("**🧠 Information extraction**", expanded=True):
         st.selectbox(
             label="Parsing algorithm:",
             options=["Bedrock Data Automation", "Amazon Bedrock LLM", "Amazon Textract"],
             key="parsing_mode",
+            index=1,
         )
         st.selectbox(
             label="Language model:",
@@ -458,17 +466,21 @@ with st.sidebar:
             key="ai_model",
             disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
         )
+
+    with st.expander("**⚙️ Advanced settings**", expanded=False):
         st.slider(
-            label="Temperature:",
+            label="LLM temperature:",
             value=TEMPERATURE_DEFAULT,
             min_value=0.0,
             max_value=1.0,
             key="temperature",
             disabled=st.session_state["parsing_mode"] == "Bedrock Data Automation",
         )
-    st.markdown("")
-
-    with st.expander("**⚙️ Additional Inputs**", expanded=False):
+        st.radio(
+            label="Output format:",
+            options=["Long", "Wide"],
+            key="table_format",
+        )
         st.checkbox(
             label="Enable advanced mode",
             key="advanced_mode",
@@ -477,14 +489,7 @@ with st.sidebar:
         )
     st.markdown("")
 
-    with st.expander("**📄 Output Format**", expanded=True):
-        st.radio(
-            label="Table format:",
-            options=["Long", "Wide"],
-            key="table_format",
-        )
-    st.markdown("")
-
+    st.header("Help")
     with st.expander(":question: **Read more**"):
         st.markdown(
             """- **Language model**: which foundation model is used to analyze the document. Various models may have different accuracy and answer latency.
@@ -493,19 +498,19 @@ with st.sidebar:
 - **Table format**: the format of the output table. Long format shows attributes as columns and documents as rows."""  # noqa: E501
         )
 
-# info banner
-with st.expander(":bulb: You are interacting with Generative AI enabled system. Expand to show instructions."):
-    st.markdown(
-        """- This app extracts custom attributes from your documents using LLMs
-- Please specify extraction parameters and provide the inputs
-- Upload your docs or insert texts on the **"Add Docs"** tab
-- Describe attributes to be extracted on the **"Describe Attributes"** tab
-- Optionally, provide additional instructions in **Instructions (optional)** tab (if enabled)
-- Optionally, provide few shot examples in **Few Shots (optional)** tab (if enabled)
-- Select the LLM and the output format using the left sidebar
-- Press **"Extract attributes"** once you have entered all input data
-"""
-    )
+# # info banner
+# with st.expander(":bulb: You are interacting with Generative AI enabled system. Expand to show instructions."):
+#     st.markdown(
+#         """- This app extracts custom attributes from your documents using LLMs
+# - Please specify extraction parameters and provide the inputs
+# - Upload your docs or insert texts on the **"Add Docs"** tab
+# - Describe attributes to be extracted on the **"Describe Attributes"** tab
+# - Optionally, provide additional instructions in **Instructions (optional)** tab (if enabled)
+# - Optionally, provide few shot examples in **Few Shots (optional)** tab (if enabled)
+# - Select the LLM and the output format using the left sidebar
+# - Press **"Extract attributes"** once you have entered all input data
+# """
+#     )
 
 
 #########################
@@ -513,24 +518,27 @@ with st.expander(":bulb: You are interacting with Generative AI enabled system. 
 #########################
 
 # tab layout
-tabs = [
-    ":scroll: **1. Add Docs**",
-    ":sparkles: **2. Describe Attributes**",
-    ":heavy_plus_sign: **3. Instructions (optional)**",
-    ":books: **4. Examples (optional)**",
-]
-if st.session_state["advanced_mode"]:
-    tab_docs, tab_attributes, tab_instructions, tab_few_shots = st.tabs(tabs)
-else:
-    tab_docs, tab_attributes = st.tabs(tabs[:2])
+st.markdown("#### ⚙️ Inputs")
+with st.container(border=True):
+    tabs = [
+        ":scroll: **1. Add Docs**",
+        ":sparkles: **2. Describe Attributes**",
+        ":heavy_plus_sign: **3. Instructions (optional)**",
+        ":books: **4. Examples (optional)**",
+    ]
+    if st.session_state["advanced_mode"]:
+        tab_docs, tab_attributes, tab_instructions, tab_few_shots = st.tabs(tabs)
+    else:
+        tab_docs, tab_attributes = st.tabs(tabs[:2])
 
 # documents
 with tab_docs:
     st.radio(
-        label="Please provide the input documents by uploading the files or entering the texts manually.",
+        label="Upload, enter or select input documents:",
         label_visibility="visible",
         key="docs_input_type",
-        options=["Upload documents", "Enter texts manually"],
+        options=["Upload documents", "Enter texts manually", "Use pre-selected docs"],
+        index=2,
     )
     if st.session_state["docs_input_type"] == "Upload documents":
         if st.session_state["parsing_mode"] == "Bedrock Data Automation":
@@ -556,7 +564,7 @@ with tab_docs:
             else SUPPORTED_EXTENSIONS,
         )
         st.session_state["docs"] = files[::-1]
-    else:
+    elif st.session_state["docs_input_type"] == "Enter texts manually":
         docs_placeholder = st.empty()
         col_add, col_remove, _ = st.columns([0.11, 0.12, 0.70])
         with col_add:
@@ -588,16 +596,50 @@ with tab_docs:
                 )
                 if text.strip():
                     st.session_state["docs"].append(text)
+    else:
+        selected_docs = []
+        for pdf in SAMPLE_PDFS:
+            with open(f"src/static/{pdf}", "rb") as f:
+                file_content = f.read()
+                file_obj = type(
+                    "FileObj",
+                    (),
+                    {
+                        "name": pdf,
+                        "read": make_read_fn(file_content),
+                        "seek": lambda x, self=None: None,
+                        "getvalue": make_read_fn(file_content),
+                    },
+                )()
+            selected_docs.append(file_obj)
+        st.session_state["docs"] = selected_docs
     LOGGER.info(f"Docs: {st.session_state['docs']}")
+
+# display uploaded pdfs
+if st.session_state["docs"]:
+    st.markdown("#### 🔎 Preview")
+    with st.container(border=True):
+        for i, doc in enumerate(st.session_state["docs"]):
+            if isinstance(doc, str):
+                with st.expander(f"📄 **{i + 1}. Text Input**"):
+                    st.text(doc)
+            else:
+                with st.expander(f"📄 **{i + 1}. {doc.name}**"):
+                    # Store the original content before reading
+                    content = doc.read()
+                    base64_pdf = base64.b64encode(content).decode("utf-8")
+                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'  # noqa: E501
+                    st.markdown(pdf_display, unsafe_allow_html=True)
+                    doc.seek(0)
 
 # attributes
 with tab_attributes:
     st.radio(
-        label="Please provide the attributes to be extracted, including name and description (e.g. explanation, possible values, examples).",  # noqa: E501
+        label="Provide the attributes to be extracted:",  # noqa: E501
         label_visibility="visible",
         key="attributes_input_type",
-        options=["Upload attributes", "Enter attributes manually"],
-        index=1,
+        options=["Upload attributes", "Enter attributes manually", "Use pre-selected attributes"],
+        index=2,
     )
     if st.session_state["attributes_input_type"] == "Upload attributes":
         st.markdown(
@@ -616,7 +658,7 @@ with tab_attributes:
                 st.session_state["num_attributes"] = len(st.session_state["attributes"])
                 for idx in range(st.session_state["num_attributes"]):
                     entity_dict = fill_attribute_fields(idx)
-    else:
+    elif st.session_state["attributes_input_type"] == "Enter attributes manually":
         attributes_placeholder = st.empty()
         col_add, col_remove, _ = st.columns([0.11, 0.12, 0.70])
         with col_add:
@@ -641,6 +683,13 @@ with tab_attributes:
                 entity_dict = show_attribute_fields(idx)
                 if entity_dict["name"].strip() and entity_dict["description"].strip():
                     st.session_state["attributes"].append(entity_dict)
+    else:
+        st.session_state["attributes"] = SAMPLE_ATTRIBUTES
+        attributes_placeholder = st.empty()
+        with attributes_placeholder.container():
+            st.session_state["num_attributes"] = len(st.session_state["attributes"])
+            for idx in range(st.session_state["num_attributes"]):
+                entity_dict = fill_attribute_fields(idx)
     LOGGER.info(f"Attributes: {st.session_state['attributes']}")
 
 # instructions
@@ -773,6 +822,10 @@ if st.session_state["advanced_mode"]:
 else:
     st.session_state["few_shots"] = []
 
+# results placeholder
+results_placeholder = st.empty()
+explanations_placeholder = st.empty()
+
 # action buttons
 st.markdown("")
 col1, col2, col3 = st.columns([0.20, 0.60, 0.20])
@@ -792,78 +845,82 @@ with col3:
 
 # show work in progress
 if RUN_EXTRACTION:
-    LOGGER.info("State")
-    for k, v in dict(st.session_state).items():
-        LOGGER.info(f"{k}={v}")
-    run_extraction()
+    with results_placeholder.container():
+        LOGGER.info("State")
+        for k, v in dict(st.session_state).items():
+            LOGGER.info(f"{k}={v}")
+        run_extraction()
 
 # show model response
 if st.session_state.get("parsed_response"):
-    st.markdown("")
-    with st.chat_message(name="assistant", avatar=ASSISTANT_AVATAR):
-        if st.session_state["parsed_response"]:
-            # table with attributes
-            st.markdown("Here are the extracted attributes:")
-            answer = process_response(
-                st.session_state["parsed_response"], wide=st.session_state["table_format"] == "Wide"
-            )
-            st.dataframe(
-                answer,
-                hide_index=st.session_state["table_format"] != "Wide",
-                use_container_width=False,
-                width=850,
-                column_config={"_index": "Feature"} if st.session_state["table_format"] == "Wide" else {},
-            )
+    with results_placeholder.container():
+        st.markdown("#### ✨ IDP Results")
+        with st.chat_message(name="assistant", avatar=ASSISTANT_AVATAR):
+            if st.session_state["parsed_response"]:
+                # table with attributes
+                st.markdown("Here are the extracted attributes:")
+                answer = process_response(
+                    st.session_state["parsed_response"], wide=st.session_state["table_format"] == "Wide"
+                )
+                st.dataframe(
+                    answer,
+                    hide_index=st.session_state["table_format"] != "Wide",
+                    use_container_width=False,
+                    width=850,
+                    column_config={"_index": "Feature"} if st.session_state["table_format"] == "Wide" else {},
+                )
 
-            # download buttons
-            file_name = f"idp-bedrock-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
-            col1, col2, col3 = st.columns([0.125, 0.125, 0.75])
-            with col1:
-                st.download_button(
-                    label=":arrow_down: JSON",
-                    data=json.dumps(answer),
-                    mime="application/json",
-                    file_name=f"{file_name}.json",
-                    use_container_width=True,
-                )
-            with col2:
-                st.download_button(
-                    label=":arrow_down: CSV",
-                    data=pd.DataFrame(answer).to_csv(index=True).encode("utf-8"),
-                    mime="text/csv",
-                    file_name=f"{file_name}.csv",
-                    use_container_width=True,
-                )
+                # download buttons
+                file_name = f"idp-bedrock-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+                col1, col2, col3 = st.columns([0.125, 0.125, 0.75])
+                with col1:
+                    st.download_button(
+                        label=":arrow_down: JSON",
+                        data=json.dumps(answer),
+                        mime="application/json",
+                        file_name=f"{file_name}.json",
+                        use_container_width=True,
+                    )
+                with col2:
+                    st.download_button(
+                        label=":arrow_down: CSV",
+                        data=pd.DataFrame(answer).to_csv(index=True).encode("utf-8"),
+                        mime="text/csv",
+                        file_name=f"{file_name}.csv",
+                        use_container_width=True,
+                    )
 
 # show LLM responses
 if st.session_state.get("raw_response"):
-    with st.expander(":mag: Show full results"):
-        for idx, (response, raw_response) in enumerate(
-            zip(st.session_state["parsed_response"], st.session_state["raw_response"])
-        ):
-            file_name = response.get("_file_name", "")
-            processed_name = file_name.rsplit(".", 1)[0] + ".txt"
-            url_original = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/originals/{file_name}")
-            url_processed = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/processed/{processed_name}")
+    with explanations_placeholder.container():
+        st.markdown("#### 💡 Explanations")
+        with st.expander(":mag: Show full results"):
+            for idx, (response, raw_response) in enumerate(
+                zip(st.session_state["parsed_response"], st.session_state["raw_response"])
+            ):
+                file_name = response.get("_file_name", "")
+                processed_name = file_name.rsplit(".", 1)[0] + ".txt"
+                url_original = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/originals/{file_name}")
+                url_processed = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/processed/{processed_name}")
 
-            st.markdown(f"##### {idx + 1}. {file_name}")
-            st.markdown("**Document**")
-            if st.session_state["parsing_mode"] != "Bedrock Data Automation":
-                st.markdown(
-                    f"""
-- [Original document]({url_original})
-- [Processed document]({url_processed})"""
-                )
-            else:
-                st.markdown(f"""[Original document]({url_original})""")
-            st.markdown("")
-            st.markdown("**Explanation**")
-            st.warning(raw_response.split("<thinking>", 1)[-1].split("</thinking>", 1)[0])
-            st.markdown("")
-            st.markdown("**JSON output**")
-            st.code(raw_response.split("<json>", 1)[-1].split("</json>", 1)[0], language="json")
-            if idx < len(st.session_state["parsed_response"]) - 1:
-                st.markdown("---")
+                st.markdown(f"##### {idx + 1}. {file_name}")
+                #             st.markdown("**Document**")
+                #             if st.session_state["parsing_mode"] == "Amazon Textract":
+                #                 st.markdown(
+                #                     f"""
+                # - [Original document]({url_original})
+                # - [Processed document]({url_processed})"""
+                #                 )
+                #             else:
+                #                 st.markdown(f"""- [Original document]({url_original})""")
+                # st.markdown("")
+                st.markdown("**Explanation**")
+                st.warning(raw_response.split("<thinking>", 1)[-1].split("</thinking>", 1)[0])
+                st.markdown("")
+                st.markdown("**JSON output**")
+                st.code(raw_response.split("<json>", 1)[-1].split("</json>", 1)[0], language="json")
+                if idx < len(st.session_state["parsed_response"]) - 1:
+                    st.markdown("---")
 
 # footnote
 show_footer()

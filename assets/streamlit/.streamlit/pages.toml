@@ -1,9 +1,9 @@
 [[pages]]
 path = "src/Home.py"
-name = "Home"
+name = "Home Page"
 icon = "🏠"
 
 [[pages]]
 path = "src/app_pages/idp_bedrock.py"
-name = "IDP Bedrock"
+name = "IDP with Amazon Bedrock"
 icon = "🚀"

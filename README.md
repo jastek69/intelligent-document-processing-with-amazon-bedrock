@@ -4,6 +4,13 @@
 
 ![screenshots/diagram.png](screenshots/diagram.png)
 
+📹 [Click here](https://amazondeu.sharepoint.com/:v:/r/sites/GenAIICEMEA/Shared%20Documents/GenAIIC%20EMEA%20All/Assets/Tabulate%20-%20IDP%20with%20Bedrock/Demos/tabulate_idp_demo.mp4?csf=1&web=1&e=AqzjA0) to see a demo of the asset
+
+🌎 Open-source version of the asset is available at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
+
+ℹ️ The name "Tabulate" is an internal project title and is not an official AWS offering
+
+
 ## Contents
 
 - [Overview](#overview)
