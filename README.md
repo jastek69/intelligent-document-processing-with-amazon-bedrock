@@ -35,11 +35,7 @@ This repo provides an AWS CDK solution that extracts information from documents 
 
 **Web UI Video**
 
-<video width="100%" controls>
-  <source src="screenshots/idp_demo.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
+📝 Update video demo link
 
 **Example API Call**
 
