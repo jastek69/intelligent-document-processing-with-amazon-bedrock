@@ -1,3 +1,4 @@
+#!/bin/bash
 sudo yum -y install epel-release --disableplugin=priorities
 sudo yum -y update --disableplugin=priorities
 sudo yum install nodejs --skip-broken --disableplugin=priorities -y

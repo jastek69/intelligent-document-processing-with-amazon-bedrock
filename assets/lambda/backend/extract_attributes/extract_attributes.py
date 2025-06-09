@@ -21,7 +21,7 @@ from model.parser import parse_json_string, parse_bedrock_response
 from prompt import load_prompt_template
 from utils import filled_prompt, token_count_tokenizer, truncate_document, get_max_input_token
 
-LOGGER = logging.Logger("ENTITY-EXTRACTION", level=logging.DEBUG)
+LOGGER = logging.Logger("IDP", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
@@ -90,7 +90,6 @@ def lambda_handler(event, context):  # noqa: C901
     # prepare prompt template
     prompt_template, _ = load_prompt_template(num_few_shots=len(few_shots), instructions=instructions)
     LOGGER.info(f"Prompt template: {prompt_template}")
-
     filled_template = filled_prompt(
         few_shots=few_shots,
         attributes=attributes,

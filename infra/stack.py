@@ -6,6 +6,8 @@ File content:
 """
 
 import json
+import logging
+import sys
 from typing import Any, Dict
 
 import aws_cdk.aws_apigateway as apigw_v1
@@ -17,11 +19,21 @@ from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
+from infra.constructs.cognito_auth import (
+    CognitoAuthenticationConstruct,
+    CognitoCallbackUpdater,
+)
+from infra.constructs.api import IDPBedrockAPIConstructs
+from infra.constructs.buckets import ServerAccessLogsBucket
+from infra.constructs.layers import IDPBedrockLambdaLayers
+from infra.stacks.streamlit import IDPBedrockStreamlitStack
 
-from infra.constructs.idp_bedrock_api import IDPBedrockAPIConstructs
-from infra.constructs.idp_bedrock_buckets import ServerAccessLogsBucket
-from infra.constructs.idp_bedrock_layers import IDPBedrockLambdaLayers
-from infra.stacks.idp_bedrock_streamlit import IDPBedrockStreamlitStack
+LOGGER = logging.Logger("STACK-BUILD", level=logging.DEBUG)
+HANDLER = logging.StreamHandler(sys.stdout)
+HANDLER.setFormatter(
+    logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+)
+LOGGER.addHandler(HANDLER)
 
 
 class IDPBedrockStack(Stack):
@@ -34,6 +46,7 @@ class IDPBedrockStack(Stack):
         super().__init__(scope, stack_name, description=description, **kwargs)
 
         ## Set architecture and Python Runtime
+        LOGGER.info("Setting architecture and Python Runtime")
         architecture = config["lambda"].get("architecture", "X86_64")
         python_runtime = config["lambda"].get("python_runtime", "PYTHON_3_11")
 
@@ -58,10 +71,11 @@ class IDPBedrockStack(Stack):
             raise RuntimeError("Select a Python version >= PYTHON_3_9")
 
         ## ** Create logging bucket for server access logs **
+        LOGGER.info("Creating logging bucket for server access logs")
         s3_logs_bucket = ServerAccessLogsBucket(self, f"{stack_name}-LOGS-BUCKET", stack_name=stack_name)
 
         ## **************** Create S3 Bucket ****************
-
+        LOGGER.info("Creating S3 bucket for data storage")
         if config["s3"]["encryption"] == "SSE-KMS":
             if config["s3"]["kms_key_arn"] != "None":
                 self.s3_kms_key = kms.Key.from_key_arn(
@@ -106,7 +120,7 @@ class IDPBedrockStack(Stack):
             )
 
         ## **************** Lambda layers ****************
-
+        LOGGER.info("Creating Lambda layers")
         self.layers = IDPBedrockLambdaLayers(
             self,
             f"{stack_name}-layers",
@@ -116,9 +130,8 @@ class IDPBedrockStack(Stack):
         )
 
         ## ********** Bedrock configs ***********
+        LOGGER.info("Creating Bedrock configs")
         bedrock_region = kwargs["env"].region
-        textract_region = config["stack_region"]
-
         if "bedrock" in config:
             if "region" in config["bedrock"]:
                 bedrock_region = (
@@ -126,7 +139,8 @@ class IDPBedrockStack(Stack):
                 )
 
         ## ********** Textract configs ***********
-
+        LOGGER.info("Creating Textract configs")
+        textract_region = config["stack_region"]
         if "textract" in config:
             if "table_flatten_headers" in config["textract"]:
                 table_flatten_headers = config["textract"]["table_flatten_headers"]
@@ -143,15 +157,24 @@ class IDPBedrockStack(Stack):
             if "use_table" in config["textract"]:
                 use_table = config["textract"]["use_table"]
 
-        ## ********** Authentication configs ***********
+        ## **************** Cognito ****************
+        LOGGER.info("Creating Cognito user pool and client")
         mfa_enabled = config.get("authentication", {}).get("MFA", True)
         access_token_validity = config.get("authentication", {}).get("access_token_validity", 60)
         cognito_users = config.get("authentication", {}).get("users", [])
         cognito_users = [user for user in cognito_users if user != "XXX@XXX.com"]
+        self.cognito_authn = CognitoAuthenticationConstruct(
+            self,
+            f"{stack_name}-AUTH",
+            stack_name=stack_name,
+            mfa_enabled=mfa_enabled,
+            access_token_validity=access_token_validity,
+            cognito_users=cognito_users,
+        )
 
         ## **************** API Constructs  ****************
-        ## ******* Enable API Gateway logging *******
         # There should be only one AWS::ApiGateway::Account resource per region per account
+        LOGGER.info("Creating API constructs")
         cloud_watch_role = iam.Role(
             self,
             "ApiGatewayCloudWatchLoggingRole",
@@ -169,6 +192,8 @@ class IDPBedrockStack(Stack):
             s3_data_bucket=self.s3_data_bucket,
             s3_kms_key=self.s3_kms_key,
             layers=self.layers,
+            user_pool=self.cognito_authn.user_pool,
+            user_pool_client=self.cognito_authn.user_pool_client,
             bedrock_region=bedrock_region,
             textract_region=textract_region,
             table_flatten_headers=table_flatten_headers,
@@ -178,17 +203,14 @@ class IDPBedrockStack(Stack):
             hide_header_layout=hide_header_layout,
             hide_page_num_layout=hide_page_num_layout,
             use_table=use_table,
-            mfa_enabled=mfa_enabled,
-            cognito_users=cognito_users,
-            access_token_validity=access_token_validity,
             architecture=self._architecture,
             python_runtime=self._runtime,
         )
-
         self.api_constructs.node.add_dependency(apigw_account)
 
         ## **************** Set SSM Parameters ****************
         # Note: StringParameter name cannot start with "aws".
+        LOGGER.info("Creating SSM parameters")
         self.ssm_cover_image_url = ssm.StringParameter(
             self,
             f"{stack_name}-SsmCoverImageUrl",
@@ -213,9 +235,6 @@ class IDPBedrockStack(Stack):
             parameter_name=f"/{stack_name}/ecs/REGION",
             string_value=self.region,
         )
-
-        ## **************** S3 BUCKET ****************
-
         self.ssm_bucket_name = ssm.StringParameter(
             self,
             f"{stack_name}-SsmBucketName",
@@ -225,6 +244,7 @@ class IDPBedrockStack(Stack):
         self.bucket_name_output = output(self, id="S3BucketName", value=self.s3_data_bucket.bucket_name)
 
         ## **************** Streamlit NestedStack ****************
+        LOGGER.info("Creating Streamlit nested stack")
         if config["streamlit"]["deploy_streamlit"]:
             self.streamlit_constructs = IDPBedrockStreamlitStack(
                 self,
@@ -236,8 +256,9 @@ class IDPBedrockStack(Stack):
                 ecs_memory=config["streamlit"]["ecs_memory"],
                 open_to_public_internet=config["streamlit"]["open_to_public_internet"],
                 ip_address_allowed=config["streamlit"].get("ip_address_allowed"),
-                ssm_client_id=self.api_constructs.ssm_client_id,
-                ssm_user_pool_id=self.api_constructs.ssm_user_pool_id,
+                ssm_client_id=self.cognito_authn.ssm_client_id,
+                ssm_user_pool_id=self.cognito_authn.ssm_user_pool_id,
+                ssm_cognito_domain=self.cognito_authn.ssm_cognito_domain,
                 ssm_region=self.ssm_region,
                 ssm_api_uri=self.api_constructs.ssm_api_uri,
                 ssm_bucket_name=self.ssm_bucket_name,
@@ -246,13 +267,23 @@ class IDPBedrockStack(Stack):
                 ssm_assistant_avatar_url=self.ssm_assistant_avatar_url,
                 ssm_state_machine_arn=self.api_constructs.ssm_state_machine_arn,
                 state_machine_name=self.api_constructs.idp_bedrock_state_machine.state_machine_name,
-                ssm_cognito_domain=self.api_constructs.ssm_cognito_domain,
             )
 
             self.cloudfront_distribution_name = output(
                 self,
                 id="CloudfrontDistributionName",
                 value=self.streamlit_constructs.cloudfront.domain_name,
+            )
+
+            ## **************** Cognito Callback Updater ****************
+            # This construct updates the Cognito User Pool Client with the CloudFront domain
+            LOGGER.info("Creating Cognito Callback Updater")
+            CognitoCallbackUpdater(
+                self,
+                f"{stack_name}-callback-updater",
+                user_pool_id=self.cognito_authn.user_pool_id,
+                client_id=self.cognito_authn.client_id,
+                cloudfront_domain=self.streamlit_constructs.cloudfront.domain_name,
             )
 
         ## **************** Tags ****************

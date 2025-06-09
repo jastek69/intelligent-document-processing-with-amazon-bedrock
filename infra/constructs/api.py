@@ -9,7 +9,7 @@ import json
 
 import aws_cdk.aws_apigatewayv2 as _apigw
 import aws_cdk.aws_apigatewayv2_integrations as _integrations
-from aws_cdk import Aws, Duration, RemovalPolicy
+from aws_cdk import Duration, RemovalPolicy
 from aws_cdk import CfnOutput as output
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as ddb
@@ -59,6 +59,8 @@ class IDPBedrockAPIConstructs(Construct):
         textract_region: str,
         architecture: _lambda.Architecture,
         python_runtime: _lambda.Runtime,
+        user_pool: cognito.UserPool,
+        user_pool_client: cognito.UserPoolClient,
         table_flatten_headers: bool = True,
         table_remove_column_headers: bool = True,
         table_duplicate_text_in_merged_cells: bool = True,
@@ -66,9 +68,6 @@ class IDPBedrockAPIConstructs(Construct):
         hide_header_layout: bool = True,
         hide_page_num_layout: bool = True,
         use_table: bool = True,
-        mfa_enabled: bool = True,
-        access_token_validity: int = 60,
-        cognito_users: list[str] = [],  # noqa: B006
         s3_kms_key: kms.Key = None,
         **kwargs,
     ) -> None:
@@ -109,10 +108,6 @@ class IDPBedrockAPIConstructs(Construct):
             Whether to hide page number layout
         use_table : bool
             Whether to use tables
-        mfa_enabled : bool
-            Whether to enable MFA
-        access_token_validity : int
-            The validity of the access token
         s3_kms_key : kms.Key
             The KMS key for the S3 bucket
         """
@@ -137,7 +132,8 @@ class IDPBedrockAPIConstructs(Construct):
         self.documents_table_name = f"{stack_name}-documents"
         self.prefix = stack_name[:16]
         self.nag_suppressed_resources = []
-        self.create_cognito_user_pool(mfa_enabled, access_token_validity, cognito_users)
+        self.user_pool = user_pool
+        self.user_pool_client = user_pool_client
 
         # Dependencies of the IDP Bedrock are included in idp_bedrock_deps layer (Lambda Powertools excluded)
         self.idp_bedrock_code_layers = [
@@ -223,101 +219,6 @@ class IDPBedrockAPIConstructs(Construct):
             log_group_name=f"/aws/vendedlogs/apigateway/{self.stack_name}/{api_id}",  # Use vendedlogs prefix
             removal_policy=RemovalPolicy.DESTROY,
             retention=logs.RetentionDays.TWO_WEEKS,
-        )
-
-    def create_cognito_user_pool(self, mfa_enabled: bool, access_token_validity: int, cognito_users: list):
-        # Cognito User Pool
-        user_pool_common_config = {
-            "id": f"{self.prefix}-user-pool",
-            "user_pool_name": f"{self.prefix}-user-pool",
-            "auto_verify": cognito.AutoVerifiedAttrs(email=True),
-            "removal_policy": RemovalPolicy.DESTROY,
-            "password_policy": cognito.PasswordPolicy(
-                min_length=8,
-                require_digits=True,
-                require_lowercase=True,
-                require_uppercase=True,
-                require_symbols=True,
-            ),
-            "account_recovery": cognito.AccountRecovery.EMAIL_ONLY,
-            "advanced_security_mode": cognito.AdvancedSecurityMode.ENFORCED,
-            "sign_in_aliases": cognito.SignInAliases(email=True),
-            "feature_plan": cognito.FeaturePlan.PLUS,
-        }
-
-        if mfa_enabled:
-            user_pool_mfa_config = {
-                "mfa": cognito.Mfa.REQUIRED,
-                "mfa_second_factor": cognito.MfaSecondFactor(sms=False, otp=True),
-            }
-            self.user_pool = cognito.UserPool(self, **user_pool_common_config, **user_pool_mfa_config)
-        else:
-            self.user_pool = cognito.UserPool(self, **user_pool_common_config)
-
-        self.user_pool.add_domain(
-            "CognitoDomain",
-            cognito_domain=cognito.CognitoDomainOptions(domain_prefix=f"{self.prefix}-{Aws.ACCOUNT_ID}"),
-        )
-
-        self.user_pool_client = self.user_pool.add_client(
-            "customer-app-client",
-            user_pool_client_name=f"{self.prefix}-client",
-            generate_secret=False,
-            access_token_validity=Duration.minutes(access_token_validity),
-            auth_flows=cognito.AuthFlow(user_password=True, user_srp=True),
-            supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.PROFILE,
-                    cognito.OAuthScope.COGNITO_ADMIN,
-                ],
-                callback_urls=["http://localhost:8501"],
-                logout_urls=["http://localhost:8501"],
-            ),
-        )
-
-        # Add users to the pool
-        for email in cognito_users:
-            cognito.CfnUserPoolUser(
-                self,
-                f"CognitoUser-{email}",
-                user_pool_id=self.user_pool.user_pool_id,
-                username=email,
-                desired_delivery_mediums=["EMAIL"],
-                force_alias_creation=True,
-                user_attributes=[
-                    cognito.CfnUserPoolUser.AttributeTypeProperty(name="email", value=email),
-                    cognito.CfnUserPoolUser.AttributeTypeProperty(name="email_verified", value="true"),
-                ],
-            )
-
-        # ********* Store COGNITO_DOMAIN in SSM Parameter Store *********
-        cognito_domain = f"{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com"
-        self.ssm_cognito_domain = ssm.StringParameter(
-            self,
-            f"{self.prefix}-SsmCognitoDomain",
-            parameter_name=f"/{self.stack_name}/ecs/COGNITO_DOMAIN",
-            string_value=cognito_domain,
-            description="Cognito domain for authentication",
-        )
-
-        self.client_id = self.user_pool_client.user_pool_client_id
-        self.user_pool_id = self.user_pool.user_pool_id
-
-        self.ssm_client_id = ssm.StringParameter(
-            self,
-            f"{self.prefix}-SsmClientId",
-            parameter_name=f"/{self.stack_name}/ecs/CLIENT_ID",
-            string_value=self.client_id,
-        )
-        self.ssm_user_pool_id = ssm.StringParameter(
-            self,
-            f"{self.prefix}-SsmUserPoolId",
-            parameter_name=f"/{self.prefix}/ecs/USER_POOL_ID",
-            string_value=self.user_pool_id,
         )
 
     def create_dynamodb(self):

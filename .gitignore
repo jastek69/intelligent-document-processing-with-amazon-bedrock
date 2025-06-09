@@ -48,7 +48,9 @@ docs/_build/
 profile_default/
 ipython_config.py
 
-# Environments
+# uv
+.python-version
+uv.lock
 .venv
 .venv/
 env/

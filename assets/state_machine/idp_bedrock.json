@@ -36,7 +36,7 @@
                     "StringEquals": "Amazon Bedrock LLM"
                   }
                 ],
-                "Next": "Extract-entities-multimodal"
+                "Next": "Run-Multimodal-IDP"
               },
               {
                 "Or": [
@@ -81,7 +81,7 @@
                     "StringMatches": "*/*.xlsx"
                   }
                 ],
-                "Next": "Convert-office"
+                "Next": "Convert-Office"
               },
               {
                 "And": [
@@ -95,7 +95,7 @@
             ],
             "Default": "Extract-text"
           },
-          "Convert-office": {
+          "Convert-Office": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
@@ -121,7 +121,7 @@
               "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
             },
             "OutputPath": "$.merged",
-            "Next": "Extract-entities"
+            "Next": "Run-IDP-on-Text"
           },
           "Extract-text": {
             "Type": "Task",
@@ -145,13 +145,13 @@
                 "BackoffRate": 2
               }
             ],
-            "Next": "Extract-entities",
+            "Next": "Run-IDP-on-Text",
             "ResultSelector": {
               "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
             },
             "OutputPath": "$.merged"
           },
-          "Extract-entities": {
+          "Run-IDP-on-Text": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
@@ -243,7 +243,7 @@
             ],
             "End": true
           },
-          "Extract-entities-multimodal": {
+          "Run-Multimodal-IDP": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
