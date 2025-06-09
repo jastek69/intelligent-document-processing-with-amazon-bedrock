@@ -8,8 +8,9 @@
 ## Contents
 
 - [Overview](#overview)
-- [Deploy the App](#deploy-the-app)
-- [Use the App](#use-the-app)
+- [Demo video](#demo)
+- [Deploy the app](#deploy-the-app)
+- [Use the app](#use-the-app)
 - [Architecture](#architecture)
 - [Team](#team)
 - [Security](#security)
@@ -30,8 +31,17 @@ This repo provides an AWS CDK solution that extracts information from documents 
 - Leverage Amazon Bedrock Data Automation, multi-modal LLMs on Amazon Bedrock, and/or Amazon Textract
 - Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo UI](assets/streamlit/src/Home.py) to process PDFs, MS Office, images, and get JSON output
 
+# 📹 Demo
 
-**Example API call**
+**Web UI Video**
+
+<video width="100%" controls>
+  <source src="screenshots/idp_demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
+**Example API Call**
 
 Refer to [the demo notebook](demo/idp_bedrock_demo.ipynb) for the API implementation and usage examples:
 
