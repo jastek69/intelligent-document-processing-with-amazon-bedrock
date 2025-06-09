@@ -4,12 +4,6 @@
 
 ![screenshots/diagram.png](screenshots/diagram.png)
 
-📹 [Click here](https://amazondeu.sharepoint.com/:v:/r/sites/GenAIICEMEA/Shared%20Documents/GenAIIC%20EMEA%20All/Assets/Tabulate%20-%20IDP%20with%20Bedrock/Demos/tabulate_idp_demo.mp4?csf=1&web=1&e=AqzjA0) to see a demo of the asset
-
-🌎 Open-source version of the asset is available at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
-
-ℹ️ The name "Tabulate" is an internal project title and is not an official AWS offering
-
 
 ## Contents
 
@@ -97,21 +91,19 @@ When working locally, make sure you have installed the following tools, language
 - [Node.js](https://nodejs.org/en/download/package-manager)
 - [IDE for your programming language](https://code.visualstudio.com/)
 - [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
-- [Python 3.12](https://www.python.org/downloads/release/python-3120/)
+- [Python 3.9+](https://www.python.org/downloads/)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) - Fast Python package installer and resolver
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 
 ### 3. Activate the Environment
 
-Navigate to the project folder and execute the following script to create a virtualenv on MacOS or Linux and install dependencies:
+Navigate to the project folder and execute the following script to create a virtual environment on macOS or Linux and install dependencies using uv:
 
 ```bash
 sh install_env.sh
 source .venv/bin/activate
 ```
-
-Note: if you encounter `line 1: python3: command not found`, change `python3` in `install_env.sh` to your Python alias.
-
 
 ### 4. Configure the Stack
 
@@ -156,16 +148,6 @@ cdk deploy --profile [PROFILE_NAME]
 
 Note: if you encounter `/bin/sh: python3: command not found`, change `python3` in `cdk.json` to your Python alias.
 
-
-### 8. Update Cognito URLs
-
-After successful deployment, you'll need to update the Cognito User Pool Client with the correct callback and logout URLs. Get the CloudFront domain from the CDK output, then run the update script:
-
-```bash
-sh update_cognito_urls.sh [your-stack-name] [CLOUDFRONT_DOMAIN]
-```
-
-Now you can use the app by visiting the CloudFront URL!
 
 ### Clean up
 
@@ -229,16 +211,18 @@ You can run the Streamlit frontend locally for testing and development by follow
 - Provide AWS credentials
   - You can add AWS credentials to the ```assets/streamlit/.env``` file
   - Or simply export credentials in your terminal, e.g. ```export AWS_PROFILE=<profile>```
-- Navigate to the frontend folder: ```cd assets/streamlit```
-- Create another environment with for the frontend ```python3 -m venv .venv```
-- Activate the environment ```source .venv/bin/activate```
-- Install frontend dependencies ```poetry install```
-- Start frontend on localhost ```streamlit run src/Home.py```
+- Navigate to the frontend folder, create environment and install dependencies:
+```bash
+cd assets/streamlit
+uv venv
+source .venv/bin/activate
+uv sync --extra dev
+```
+- Start frontend on localhost: ```streamlit run src/Home.py```
 - Copy the local URL from the terminal output and paste in the address bar of your browser
-- Make sure that the local URL you use is http://localhost:8501. It will not work otherwise.
-- Update the `.env` file with the relevant environment variables.
+- Make sure that the local URL you use is http://localhost:8501. It will not work otherwise
 
-In order to keep coding standards and formatting consistent, we use `pre-commit`. This can be run from the terminal via `poetry run pre-commit run -a`.
+In order to keep coding standards and formatting consistent, we use `pre-commit`. This can be run from the terminal via `uv run pre-commit run -a`.
 
 # 🏗️ Architecture
 
