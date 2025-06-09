@@ -35,7 +35,7 @@ This repo provides an AWS CDK solution that extracts information from documents 
 
 **Web UI Video**
 
-📝 Update video demo link
+📹 [Click here](screenshots/idp_demo.mp4) to watch a short demo of the app.
 
 **Example API Call**
 
