@@ -14,7 +14,7 @@ import yaml
 from cdk_nag import AwsSolutionsChecks, NagSuppressions
 from yaml.loader import SafeLoader
 
-from infra.idp_bedrock_stack import IDPBedrockStack
+from infra.stack import IDPBedrockStack
 
 LOGGER = logging.Logger("APP-BUILD", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
@@ -51,6 +51,10 @@ NagSuppressions.add_stack_suppressions(
         {
             "id": "AwsSolutions-EC23",
             "reason": "False positive, all traffic is only allowed within the same security group",
+        },
+        {
+            "id": "AwsSolutions-IAM5",
+            "reason": "CognitoUpdaterRole needs wildcard log access for its Lambda function.",
         },
     ],
     True,

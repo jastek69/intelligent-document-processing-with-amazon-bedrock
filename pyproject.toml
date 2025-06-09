@@ -1,34 +1,31 @@
-[build-system]
-requires = ["poetry-core>=1.6.1"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
-name = "Intelligent Document Processing with Amazon Bedrock"
+[project]
+name = "intelligent-document-processing-bedrock"
 version = "0.1.0"
 description = "Extract information from unstructured documents at scale with Amazon Bedrock"
 authors = [
-    "AWS Generative Ai Innovation Center",
+    {name = "AWS Generative AI Innovation Center"}
 ]
-package-mode = false
+requires-python = ">=3.9"
+dependencies = [
+    "aws-cdk-lib>=2.196.0",
+    "cdk-nag>=2.35.101",
+    "boto3>=1.38.17",
+    "constructs>=10.0.0",
+    "pyyaml>=6.0.0",
+    "aws-lambda-powertools[validation]>=2.25.1",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9.0"
-aws-cdk-lib = "^2.196"
-cdk-nag = "^2.35.99"
-boto3 = "^1.38.17"
-constructs = "^10.0.0"
-pyyaml = "^6.0.0"
-aws-lambda-powertools = {extras = ["validation"], version = "^2.25.1"}
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.11.10"
-isort = "^6.0.1"
-ipykernel = "^6.29.5"
-pre-commit = "^4.2.0"
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.0.0"
-hypothesis = "^6.87.3"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11.10",
+    "isort>=6.0.1",
+    "ipykernel>=6.29.5",
+    "pre-commit>=4.2.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "hypothesis>=6.87.3",
+]
 
 [tool.isort]
 profile = "black"
