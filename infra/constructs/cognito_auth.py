@@ -44,7 +44,7 @@ Resources created:
 6. SSM Parameters
     - /{stack_name}/ecs/COGNITO_DOMAIN
     - /{stack_name}/ecs/CLIENT_ID
-    - /{prefix}/ecs/USER_POOL_ID
+    - /{stack_name}/ecs/USER_POOL_ID
 
 Args:
     scope (Construct): The scope in which to define this construct
@@ -193,26 +193,24 @@ class CognitoAuthenticationConstruct(Construct):
                 ],
             )
 
-        # ********* Store COGNITO_DOMAIN in SSM Parameter Store *********
+        # ********* Store Cognito params in SSM Parameter Store *********
         cognito_domain = f"{self.prefix}-{Aws.ACCOUNT_ID}.auth.{Aws.REGION}.amazoncognito.com"
         self._ssm_cognito_domain = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmCognitoDomain",
+            f"{self.prefix}-SSM-CognitoDomain",
             parameter_name=f"/{self.stack_name}/ecs/COGNITO_DOMAIN",
             string_value=cognito_domain,
             description="Cognito domain for authentication",
         )
-
         self._ssm_client_id = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmClientId",
+            f"{self.prefix}-SSM-ClientId",
             parameter_name=f"/{self.stack_name}/ecs/CLIENT_ID",
             string_value=self.client_id,
         )
-
         self._ssm_user_pool_id = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmUserPoolId",
+            f"{self.prefix}-SSM-UserPoolId",
             parameter_name=f"/{self.prefix}/ecs/USER_POOL_ID",
             string_value=self.user_pool_id,
         )
@@ -278,7 +276,7 @@ class CognitoCallbackUpdater(Construct):
             )
         )
 
-        # First, get the current configuration
+        # Get the current configuration
         self.describe_client = cr.AwsCustomResource(
             self,
             "DescribeUserPoolClient",
@@ -341,7 +339,7 @@ class CognitoCallbackUpdater(Construct):
 
     def add_nag_suppressions(self) -> None:
         """Adds NagSuppressions to the construct."""
-        # This might be necessary if cdk-nag flags the CR provider framework Lambdas.
+        # This might be necessary if cdk-nag flags the CR provider framework Lambdas
         NagSuppressions.add_resource_suppressions(
             [self.describe_client, self.update_client],
             [

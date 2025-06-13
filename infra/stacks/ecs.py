@@ -526,7 +526,7 @@ class IDPBedrockECSStack(NestedStack):
 
         self.ssm_cloudfront_domain = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmCloudFront",
+            f"{self.prefix}-SSM-CloudFront",
             parameter_name=f"/{self.prefix}/ecs/CLOUDFRONT_DOMAIN",
             string_value=f"{cloudfront_distribution.domain_name}",
         )

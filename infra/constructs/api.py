@@ -190,14 +190,14 @@ class IDPBedrockAPIConstructs(Construct):
         self.api_uri = http_api.api_endpoint
         self.ssm_api_uri = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmApiUri",
+            f"{self.prefix}-SSM-ApiUri",
             parameter_name=f"/{self.stack_name}/ecs/API_URI",
             string_value=self.api_uri,
         )
 
         self.ssm_state_machine_arn = ssm.StringParameter(
             self,
-            f"{self.prefix}-SsmFilingsARN",
+            f"{self.prefix}-SSM-FilingsARN",
             parameter_name=f"/{self.stack_name}/ecs/STATE_MACHINE_ARN",
             string_value=self.state_machine_arn,
         )

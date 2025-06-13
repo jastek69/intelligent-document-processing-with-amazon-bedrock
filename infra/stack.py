@@ -211,31 +211,31 @@ class IDPBedrockStack(Stack):
         LOGGER.info("Creating SSM parameters")
         self.ssm_cover_image_url = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmCoverImageUrl",
+            f"{stack_name}-SSM-CoverImageUrl",
             parameter_name=f"/{stack_name}/ecs/COVER_IMAGE_URL",
             string_value=config["frontend"]["cover_image_url"],
         )
         self.ssm_assistant_avatar_url = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmAssistantAvatarUrl",
+            f"{stack_name}-SSM-AssistantAvatarUrl",
             parameter_name=f"/{stack_name}/ecs/ASSISTANT_AVATAR_URL",
             string_value=config["frontend"]["assistant_avatar"],
         )
         self.ssm_bedrock_model_ids = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmBedrockModelIds",
+            f"{stack_name}-SSM-BedrockModelIds",
             parameter_name=f"/{stack_name}/ecs/BEDROCK_MODEL_IDS",
             string_value=json.dumps(config["bedrock"].get("model_ids", [])),
         )
         self.ssm_region = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmRegion",
+            f"{stack_name}-SSM-Region",
             parameter_name=f"/{stack_name}/ecs/REGION",
             string_value=self.region,
         )
         self.ssm_bucket_name = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmBucketName",
+            f"{stack_name}-SSM-BucketName",
             parameter_name=f"/{stack_name}/ecs/BUCKET_NAME",
             string_value=self.s3_data_bucket.bucket_name,
         )
