@@ -23,6 +23,10 @@
                       },
                       {
                         "Variable": "$.file_name",
+                        "StringMatches": "*/*.jpeg"
+                      },
+                      {
+                        "Variable": "$.file_name",
                         "StringMatches": "*/*.png"
                       },
                       {
@@ -36,7 +40,7 @@
                     "StringEquals": "Amazon Bedrock LLM"
                   }
                 ],
-                "Next": "Run-Multimodal-IDP"
+                "Next": "Run-IDP-On-Image"
               },
               {
                 "Or": [
@@ -62,6 +66,10 @@
                   },
                   {
                     "Variable": "$.file_name",
+                    "StringMatches": "*/*.xlsx"
+                  },
+                  {
+                    "Variable": "$.file_name",
                     "StringMatches": "*/*.html"
                   },
                   {
@@ -78,10 +86,10 @@
                   },
                   {
                     "Variable": "$.file_name",
-                    "StringMatches": "*/*.xlsx"
+                    "StringMatches": "*/*.csv"
                   }
                 ],
-                "Next": "Convert-Office"
+                "Next": "Read-Office-File"
               },
               {
                 "And": [
@@ -95,7 +103,7 @@
             ],
             "Default": "Extract-text"
           },
-          "Convert-Office": {
+          "Read-Office-File": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
@@ -121,7 +129,7 @@
               "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
             },
             "OutputPath": "$.merged",
-            "Next": "Run-IDP-on-Text"
+            "Next": "Run-IDP-On-Text"
           },
           "Extract-text": {
             "Type": "Task",
@@ -145,20 +153,20 @@
                 "BackoffRate": 2
               }
             ],
-            "Next": "Run-IDP-on-Text",
+            "Next": "Run-IDP-On-Text",
             "ResultSelector": {
               "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
             },
             "OutputPath": "$.merged"
           },
-          "Run-IDP-on-Text": {
+          "Run-IDP-On-Text": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
               "Payload": {
                 "body.$": "$"
               },
-              "FunctionName": "${LAMBDA_EXTRACT_ATTRIBUTES}"
+              "FunctionName": "${LAMBDA_RUN_IDP_ON_TEXT}"
             },
             "Retry": [
               {
@@ -243,14 +251,14 @@
             ],
             "End": true
           },
-          "Run-Multimodal-IDP": {
+          "Run-IDP-On-Image": {
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
               "Payload": {
                 "body.$": "$"
               },
-              "FunctionName": "${LAMBDA_EXTRACT_ATTRIBUTES_LLM}"
+              "FunctionName": "${LAMBDA_RUN_IDP_ON_IMAGE}"
             },
             "Retry": [
               {
@@ -306,7 +314,8 @@
         "attributes.$": "$.attributes",
         "model_params.$": "$.model_params",
         "parsing_mode.$": "$.parsing_mode",
-        "few_shots.$": "$.few_shots"
+        "few_shots.$": "$.few_shots",
+        "instructions.$": "$.instructions"
       },
       "MaxConcurrency": 10
     }
