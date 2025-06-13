@@ -2,33 +2,30 @@
 
 🚀 Extract information from unstructured documents at scale with Amazon Bedrock
 
+> 🌎 Open-source version of the asset is published at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
+
 ![media/diagram.png](media/diagram.png)
 
-Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from internal documents, analyzing customer reviews, and more.
+Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from legal contracts, analyzing customer reviews, and more.
 
-This repo provides an AWS CDK solution that extracts information from documents in seconds using generative AI.
+This repo provides an AWS CDK solution for intelligent document processing in seconds using generative AI.
 
-
+**Key features:**
 - Extract different information, including:
-  - Well-defined entities (e.g., name, title)
-  - Numeric scores (e.g., sentiment, urgency)
-  - Free-form content (e.g., summary, suggested response)
+  - Well-defined entities (name, title, etc)
+  - Numeric scores (sentiment, urgency, etc)
+  - Free-form content (summary, suggested response, etc)
 - Simply describe the attributes to be extracted without costly data annotation or model training
-- Leverage Amazon Bedrock Data Automation, multi-modal LLMs on Amazon Bedrock, and/or Amazon Textract
-- Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo UI](src/ecs/src/Home.py) to process PDFs, MS Office, images, and get JSON output
-
-
-> 🌎 Open-source version of the asset is published at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
->
-> ℹ️ "Tabulate" is an internal project name and is not an official AWS offering
+- Leverage Amazon Bedrock Data Automation and multi-modal LLMs on Amazon Bedrock
+- Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo frontend](src/ecs/src/Home.py) to process PDFs, MS Office, images, and other formats
 
 
 ## Contents
 
 - [Demo](#demo)
 - [Architecture](#architecture)
-- [Deploy the app](#deploy-the-app)
-- [Use the app](#use-the-app)
+- [Deployment](#deployment)
+- [Usage](#usage)
 - [Team](#team)
 - [Security](#security)
 - [License](#license)
@@ -69,7 +66,7 @@ This diagram depicts a high-level architecture of the solution:
 ![media/architecture.png](media/architecture.png)
 
 
-# 🔧 Deploy the App
+# 🔧 Deployment
 
 To deploy the app to your AWS account, you can use a local IDE or create a SageMaker Notebook instance.
 
@@ -178,7 +175,7 @@ When deleting the stack, it may delete everything except for the created S3 buck
 This happens die to a wrong Python path. Change `python3` in `cdk.json` to your Python alias.
 
 
-# 💻 Use the App
+# 💻 Usage
 
 ## Option 1: Run API from Python
 
