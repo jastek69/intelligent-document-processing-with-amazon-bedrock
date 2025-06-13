@@ -2,7 +2,7 @@
 
 🚀 Extract information from unstructured documents at scale with Amazon Bedrock
 
-> 🌎 Open-source version of the asset is published at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
+🌎 Open-source version of the asset is published at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
 
 ![media/diagram.png](media/diagram.png)
 
