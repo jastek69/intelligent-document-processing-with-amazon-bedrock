@@ -8,8 +8,8 @@ import sys
 
 import streamlit as st
 from components.ssm import load_ssm_params
-from dotenv import dotenv_values, load_dotenv
 from components.styling import set_page_styling
+from dotenv import dotenv_values, load_dotenv
 from st_pages import add_indentation, show_pages_from_config
 
 # For local testing only
@@ -33,6 +33,7 @@ HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
 
+
 #########################
 #     COVER & CONFIG
 #########################
@@ -42,15 +43,13 @@ ASSISTANT_AVATAR = os.environ.get("ASSISTANT_AVATAR_URL")
 PAGE_TITLE = "IDP Bedrock"
 PAGE_ICON = ":sparkles:"
 
-
 # Cognito config
 CLIENT_ID = os.environ["CLIENT_ID"]
 USER_POOL_ID = os.environ["USER_POOL_ID"]
 REGION = os.environ["REGION"]
 CLOUDFRONT_DOMAIN = os.environ.get("CLOUDFRONT_DOMAIN")
 COGNITO_DOMAIN = os.environ["COGNITO_DOMAIN"]
-from components.authenticate import local_redirect_to_cognito, exchange_code_for_token  # noqa: E402
-
+from components.authenticate import exchange_code_for_token, local_redirect_to_cognito  # noqa: E402
 
 # By default, we define the production CloudFront redirect
 PROD_REDIRECT_URI = f"https://{CLOUDFRONT_DOMAIN}/oauth2/idpresponse"

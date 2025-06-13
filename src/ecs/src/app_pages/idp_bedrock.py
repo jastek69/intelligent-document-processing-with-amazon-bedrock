@@ -45,19 +45,24 @@ from components.constants import (
     MAX_ATTRIBUTES,
     MAX_CHARS_DESCRIPTION,
     MAX_CHARS_DOC,
-    MAX_CHARS_FEW_SHOTS_INPUT,
-    MAX_CHARS_FEW_SHOTS_OUTPUT,
-    MAX_CHARS_NAME,
     MAX_DOCS,
     MAX_FEW_SHOTS,
     SAMPLE_ATTRIBUTES,
     SAMPLE_PDFS,
     SUPPORTED_EXTENSIONS,
-    SUPPORTED_EXTENSIONS_BEDROCK,
     SUPPORTED_EXTENSIONS_BDA,
+    SUPPORTED_EXTENSIONS_BEDROCK,
     TEMPERATURE_DEFAULT,
 )
-from components.frontend import show_empty_container, show_footer
+from components.frontend import (
+    clear_results,
+    fill_attribute_fields,
+    fill_few_shots_fields,
+    show_attribute_fields,
+    show_empty_container,
+    show_few_shots_fields,
+    show_footer,
+)
 from components.model import get_model_names
 from components.s3 import create_presigned_url
 from components.styling import set_page_styling
@@ -148,169 +153,6 @@ st.session_state.setdefault("few_shots_uploader_key", 0)
 #########################
 #    HELPER FUNCTIONS
 #########################
-
-
-def clear_results() -> None:
-    """
-    Clear results
-    """
-    st.session_state["parsed_response"] = []
-    st.session_state["raw_response"] = []
-    st.session_state["docs"] = []
-    st.session_state["attributes"] = []
-    st.session_state["few_shots"] = []
-    st.session_state["num_attributes"] = DEFAULT_ATTRIBUTES
-    st.session_state["num_docs"] = DEFAULT_DOCS
-    st.session_state["num_few_shots"] = DEFAULT_FEW_SHOTS
-    st.session_state["docs_uploader_key"] += 1
-    st.session_state["attributes_uploader_key"] += 1
-    st.session_state["few_shots_uploader_key"] += 1
-    st.session_state["instructions"] = ""
-    for i in range(MAX_DOCS):
-        if f"document_{i}" in st.session_state:
-            st.session_state[f"document_{i}"] = ""
-    for i in range(MAX_ATTRIBUTES):
-        if f"name_{i}" in st.session_state:
-            st.session_state[f"name_{i}"] = ""
-        if f"description_{i}" in st.session_state:
-            st.session_state[f"description_{i}"] = ""
-    LOGGER.info(("Clearing results"))
-
-
-def show_attribute_fields(idx: int) -> None:
-    """
-    Show input fields for entity description
-    """
-    col1, col2 = st.columns([0.25, 0.75])
-
-    example_names = ["Person", "English", "Sentiment"]
-    example_placeholders = [
-        "Name of any person who is mentioned in the document",
-        "Whether the document is written in English",
-        "Overall sentiment of the text between 0 and 1",
-    ]
-
-    with col1:
-        name = st.text_area(
-            placeholder=example_names[idx % len(example_names)],
-            label="Name:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"name_{idx}",
-            height=30,
-            max_chars=MAX_CHARS_NAME,
-        )
-    with col2:
-        description = st.text_area(
-            placeholder=example_placeholders[idx % len(example_placeholders)],
-            label="Description:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"description_{idx}",
-            height=30,
-            max_chars=MAX_CHARS_DESCRIPTION,
-        )
-
-    return {
-        "name": name,
-        "description": description,
-    }
-
-
-def fill_attribute_fields(idx: int) -> None:
-    """
-    Fill input fields for entity description
-    """
-    col1, col2 = st.columns([0.25, 0.75])
-
-    with col1:
-        name = st.text_area(
-            label="Name:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"name_{idx}",
-            height=25,
-            max_chars=MAX_CHARS_NAME,
-            value=st.session_state["attributes"][idx]["name"],
-        )
-    with col2:
-        description = st.text_area(
-            label="Description:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"description_{idx}",
-            height=25,
-            max_chars=MAX_CHARS_DESCRIPTION,
-            value=st.session_state["attributes"][idx]["description"],
-        )
-
-    return {
-        "name": name,
-        "description": description,
-    }
-
-
-def show_few_shots_fields(idx: int) -> None:
-    """
-    Show input fields for few shots
-    """
-
-    col1, col2 = st.columns([0.5, 0.5])
-    _exemplar_output = """{
-    "Attribute_1": "The correct value of Attribute_1",
-    "Attribute_2": "The correct value of Attribute_2",
-}"""
-
-    with col1:
-        few_shots_input = st.text_area(
-            placeholder="Exemplar Input",
-            label="Input:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"few_shots_input_{idx}",
-            height=120,
-            max_chars=MAX_CHARS_FEW_SHOTS_INPUT,
-        )
-    with col2:
-        few_shots_output = st.text_area(
-            placeholder=_exemplar_output,
-            label="Output:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"few_shots_output_{idx}",
-            height=120,
-            max_chars=MAX_CHARS_FEW_SHOTS_OUTPUT,
-        )
-
-    return {
-        "input": few_shots_input,
-        "output": few_shots_output,
-    }
-
-
-def fill_few_shots_fields(idx: int) -> None:
-    """
-    Fill input fields for few shots
-    """
-    col1, col2 = st.columns([0.5, 0.5])
-
-    with col1:
-        few_shots_input = st.text_area(
-            label="Input:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"few_shots_input_{idx}",
-            height=120,
-            max_chars=MAX_CHARS_FEW_SHOTS_INPUT,
-            value=json.dumps(st.session_state["few_shots"][idx]["input"], indent=4),
-        )
-    with col2:
-        few_shots_output = st.text_area(
-            label="Output:",
-            label_visibility="collapsed" if idx != 0 else "visible",
-            key=f"few_shots_output_{idx}",
-            height=120,
-            max_chars=MAX_CHARS_FEW_SHOTS_OUTPUT,
-            value=json.dumps(st.session_state["few_shots"][idx]["output"], indent=4),
-        )
-
-    return {
-        "input": few_shots_input,
-        "output": few_shots_output,
-    }
 
 
 def make_read_fn(content):
@@ -436,7 +278,6 @@ def run_extraction() -> None:
                 thinking.empty()
                 vertical_space.empty()
 
-    # Display final status
     if not st.session_state.get("parsed_response"):
         with error_container:
             st.error("No results were generated. Please try again.", icon="🚨")
@@ -495,20 +336,6 @@ with st.sidebar:
 - **Advanced mode**: allows providing optional document-level instructions and few-shot examples as inputs.
 - **Table format**: the format of the output table. Long format shows attributes as columns and documents as rows."""  # noqa: E501
         )
-
-# # info banner
-# with st.expander(":bulb: You are interacting with Generative AI enabled system. Expand to show instructions."):
-#     st.markdown(
-#         """- This app extracts custom attributes from your documents using LLMs
-# - Please specify extraction parameters and provide the inputs
-# - Upload your docs or insert texts on the **"Add Docs"** tab
-# - Describe attributes to be extracted on the **"Describe Attributes"** tab
-# - Optionally, provide additional instructions in **Instructions (optional)** tab (if enabled)
-# - Optionally, provide few shot examples in **Few Shots (optional)** tab (if enabled)
-# - Select the LLM and the output format using the left sidebar
-# - Press **"Extract attributes"** once you have entered all input data
-# """
-#     )
 
 
 #########################
@@ -632,6 +459,7 @@ if st.session_state["docs"]:
                     else:
                         st.info("Preview not available.")
                     doc.seek(0)
+
 # attributes
 with tab_attributes:
     st.radio(
@@ -774,13 +602,6 @@ if st.session_state["advanced_mode"]:
                     key=f"few_shots_{st.session_state['few_shots_uploader_key']}",
                     type=["json"],
                 )
-                # if few_shots is not None:
-                #     with st.spinner("Uploading examples..."):
-                #         # TODO: look into behaviour when not using deepcopy (few_shot var changes after file upload)
-                #         file_key_markings = api.invoke_file_upload(
-                #             file=deepcopy(few_shots), prefix="few_shots", access_token=st.session_state["access_tkn"]
-                #         )
-                #         LOGGER.info(f"file key: {file_key_markings}")
 
             if few_shots is not None:
                 if multimodal_on:
@@ -849,9 +670,6 @@ with col3:
 # show work in progress
 if RUN_EXTRACTION:
     with results_placeholder.container():
-        LOGGER.info("State")
-        for k, v in dict(st.session_state).items():
-            LOGGER.info(f"{k}={v}")
         run_extraction()
 
 # show model response
@@ -899,7 +717,7 @@ if st.session_state.get("raw_response"):
         st.markdown("#### 💡 Explanations")
         with st.expander(":mag: Show full results"):
             for idx, (response, raw_response) in enumerate(
-                zip(st.session_state["parsed_response"], st.session_state["raw_response"])
+                zip(st.session_state["parsed_response"], st.session_state["raw_response"], strict=True)
             ):
                 file_name = response.get("_file_name", "")
                 processed_name = file_name.rsplit(".", 1)[0] + ".txt"
@@ -907,16 +725,6 @@ if st.session_state.get("raw_response"):
                 url_processed = create_presigned_url(f"s3://{os.environ.get('BUCKET_NAME')}/processed/{processed_name}")
 
                 st.markdown(f"##### {idx + 1}. {file_name}")
-                #             st.markdown("**Document**")
-                #             if st.session_state["parsing_mode"] == "Amazon Textract":
-                #                 st.markdown(
-                #                     f"""
-                # - [Original document]({url_original})
-                # - [Processed document]({url_processed})"""
-                #                 )
-                #             else:
-                #                 st.markdown(f"""- [Original document]({url_original})""")
-                # st.markdown("")
                 st.markdown("**Explanation**")
                 st.warning(raw_response.split("<thinking>", 1)[-1].split("</thinking>", 1)[0])
                 st.markdown("")
