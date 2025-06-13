@@ -63,14 +63,14 @@ bedrock:
     # - ai21.j2-ultra-v1
     # - ai21.j2-mid-v1
 
-authentication:               # Authentication settings for the Streamlit frontend
+authentication:               # Authentication settings for the frontend
   MFA: False                  # Set to True/False to enable/disable multi-factor authentication
   access_token_validity: 720  # Time until access token expires and a user is logged out (in minutes)
   users:                      # List of user emails to be created in Cognito with the access to the web app
     - XXX@XXX.com
 
-streamlit:
-  deploy_streamlit: True         # Whether to deploy Streamlit frontend on ECS
+frontend:
+  deploy_ecs: True         # Whether to deploy demo frontend on ECS
   open_to_public_internet: True  # Opens the Application Load Balancer to the internet
   # ip_address_allowed: [pl-4e2ece27] # List of IP addresses (cidr ranges) and prefix lists allowed to access the app in the ALB Security Group. If not set, SG is open to the internet
   ecs_memory: 2_048              # Memory of the ECS instance (Mb)
