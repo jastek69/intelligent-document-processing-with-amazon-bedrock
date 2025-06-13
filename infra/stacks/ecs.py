@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    IDP Bedrock Streamlit stack
 """
 
 import os
@@ -67,7 +64,7 @@ class CloudWatchLogGroup(Construct):
         return self.log_group.log_group_arn
 
 
-class IDPBedrockStreamlitStack(NestedStack):
+class IDPBedrockECSStack(NestedStack):
     ALLOWED_ECR_AUTHENTICATION_ACTIONS = [
         "ecr:GetAuthorizationToken",
     ]
@@ -102,7 +99,7 @@ class IDPBedrockStreamlitStack(NestedStack):
         # enable_waf: bool = True,
         **kwargs,
     ) -> None:
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, id, description="Frontend for IDP with Amazon Bedrock", **kwargs)
         # self.env = "dev"
         self.prefix = stack_name
         self.ecs_cpu = ecs_cpu
@@ -174,9 +171,9 @@ class IDPBedrockStreamlitStack(NestedStack):
         # ECR: Docker build and push to ECR
         return DockerImageAsset(
             self,
-            "StreamlitImg",
+            "ECSImg",
             # asset_name = f"{prefix}-streamlit-img",
-            directory=os.path.join(Path(__file__).parent.parent.parent, "assets/streamlit"),
+            directory=os.path.join(Path(__file__).parent.parent.parent, "src/ecs"),
         )
 
     def create_webapp_vpc(self, open_to_public_internet=False):
@@ -315,9 +312,9 @@ class IDPBedrockStreamlitStack(NestedStack):
 
         log_group = CloudWatchLogGroup(
             scope=self,
-            id="StreamlitContainerLogGroup",
+            id="ECSContainerLogGroup",
             resource_prefix=self.resource_prefix,
-            log_group_name=f"/{self.prefix}/streamlit",
+            log_group_name=f"/{self.prefix}/ecs",
         )
 
         task_execution_role = iam.Role(
@@ -395,7 +392,7 @@ class IDPBedrockStreamlitStack(NestedStack):
         """
         if self.enable_waf:
             waf = wafv2.CfnWebACL(self,
-                'StreamlitWAF',
+                'ECSWAF',
                 default_action= {
                     'allow': {}
                 },
@@ -430,7 +427,7 @@ class IDPBedrockStreamlitStack(NestedStack):
         # ********* Cloudfront distribution *********
 
         # Update the CloudFront function to rewrite /oauth2/idpresponse to /
-        # Update the CloudFront function to properly handle /oauth2/idpresponse and pass the code to Streamlit
+        # Update the CloudFront function to properly handle /oauth2/idpresponse and pass the code to ECS
         function = cloudfront.Function(
             self,
             "RedirectFunction",
@@ -547,7 +544,7 @@ class IDPBedrockStreamlitStack(NestedStack):
 
         # Add container with the secrets
         fargate_task_definition.add_container(
-            "StreamlitAppContainer",
+            "ECSAppContainer",
             image=ecs.ContainerImage.from_docker_image_asset(self.docker_asset),
             port_mappings=[ecs.PortMapping(container_port=8501, protocol=ecs.Protocol.TCP)],
             secrets={
@@ -568,7 +565,7 @@ class IDPBedrockStreamlitStack(NestedStack):
 
         service = ecs.FargateService(
             self,
-            "StreamlitECSService",
+            "ECSService",
             cluster=cluster,
             task_definition=fargate_task_definition,
             service_name=f"{self.prefix}-stl-front",

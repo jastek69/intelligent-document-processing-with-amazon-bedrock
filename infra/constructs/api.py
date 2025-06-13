@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    IDP Bedrock API constructs
 """
 
 import json
@@ -45,6 +42,7 @@ WORD_EXTENSIONS = (".doc", ".docx")
 EXCEL_EXTENSIONS = (".xls", ".xlsx")
 HTML_EXTENSIONS = (".html", ".htm")
 MARKDOWN_EXTENSIONS = (".md", ".markdown")
+CSV_EXTENSIONS = ".csv"
 
 
 class IDPBedrockAPIConstructs(Construct):
@@ -186,7 +184,7 @@ class IDPBedrockAPIConstructs(Construct):
         http_api.add_routes(
             path="/attributes",
             methods=[_apigw.HttpMethod.POST],
-            integration=_integrations.HttpLambdaIntegration("LambdaProxyIntegration", handler=self.attributes_lambda),
+            integration=_integrations.HttpLambdaIntegration("LambdaProxyIntegration", handler=self.idp_text_lambda),
         )
 
         self.api_uri = http_api.api_endpoint
@@ -235,13 +233,13 @@ class IDPBedrockAPIConstructs(Construct):
 
     ## **************** Lambda Functions ****************
     def create_lambda_functions(self):
-        ## ********* Extract from text lambda *********
-        self.attributes_lambda = _lambda.DockerImageFunction(
+        ## ********* IDP from text lambda *********
+        self.idp_text_lambda = _lambda.DockerImageFunction(
             self,
-            f"{self.stack_name}-attributes-lambda",
+            f"{self.stack_name}-idp-lambda",
             architecture=self._architecture,
-            code=_lambda.DockerImageCode.from_image_asset("./assets/lambda/backend/extract_attributes"),
-            function_name=f"{self.stack_name}-extract-attributes-text",
+            code=_lambda.DockerImageCode.from_image_asset("./src/lambda/run_idp_on_text"),
+            function_name=f"{self.stack_name}-idp-text",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
             environment={
@@ -250,7 +248,7 @@ class IDPBedrockAPIConstructs(Construct):
             },
             role=self.lambda_attributes_role,
         )
-        self.attributes_lambda.add_alias(
+        self.idp_text_lambda.add_alias(
             "Warm",
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
@@ -261,8 +259,8 @@ class IDPBedrockAPIConstructs(Construct):
             f"{self.stack_name}-bda-lambda",
             runtime=self._python_runtime,
             architecture=self._architecture,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/run_bedrock_automation"),
-            handler="run_bedrock_automation.lambda_handler",
+            code=_lambda.Code.from_asset("./src/lambda/run_bda"),
+            handler="run_bda.lambda_handler",
             function_name=f"{self.stack_name}-run-bda",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
@@ -278,12 +276,11 @@ class IDPBedrockAPIConstructs(Construct):
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
         )
-
         ## ********* Read Office files *********
         self.read_office_lambda = _lambda.DockerImageFunction(
             self,
             f"{self.stack_name}-read_office-docker-lambda",
-            code=_lambda.DockerImageCode.from_image_asset(directory="./assets/lambda/backend/read_office_docker"),
+            code=_lambda.DockerImageCode.from_image_asset(directory="./src/lambda/read_office_file"),
             function_name=f"{self.stack_name}-read_office_lambda",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
@@ -295,15 +292,16 @@ class IDPBedrockAPIConstructs(Construct):
                 "EXCEL_EXTENSIONS": json.dumps(EXCEL_EXTENSIONS),
                 "HTML_EXTENSIONS": json.dumps(HTML_EXTENSIONS),
                 "MARKDOWN_EXTENSIONS": json.dumps(MARKDOWN_EXTENSIONS),
+                "CSV_EXTENSIONS": json.dumps(CSV_EXTENSIONS),
             },
             role=self.lambda_textract_role,
         )
-        ## ********* Multimodal extract lambda *********
-        self.llm_attributes_lambda = _lambda.DockerImageFunction(
+        ## ********* IDP on images lambda *********
+        self.idp_image_lambda = _lambda.DockerImageFunction(
             self,
-            f"{self.stack_name}-attributes-llm-lambda",
-            code=_lambda.DockerImageCode.from_image_asset("./assets/lambda/backend/extract_attributes_llm"),
-            function_name=f"{self.stack_name}-extract-attributes-multimodal",
+            f"{self.stack_name}-idp-image-lambda",
+            code=_lambda.DockerImageCode.from_image_asset("./src/lambda/run_idp_on_image"),
+            function_name=f"{self.stack_name}-idp-images",
             memory_size=3008,
             timeout=Duration.seconds(QUERY_BEDROCK_TIMEOUT),
             environment={
@@ -313,7 +311,7 @@ class IDPBedrockAPIConstructs(Construct):
             },
             role=self.lambda_attributes_role,  # TODO consider making a separate role?
         )
-        self.llm_attributes_lambda.add_alias(
+        self.idp_image_lambda.add_alias(
             "Warm",
             provisioned_concurrent_executions=0,
             description="Alias used for Lambda provisioned concurrency",
@@ -324,7 +322,7 @@ class IDPBedrockAPIConstructs(Construct):
             f"{self.stack_name}-get-examples-list-lambda",
             runtime=self._python_runtime,
             architecture=self._architecture,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/dynamo_retrieve"),
+            code=_lambda.Code.from_asset("./src/lambda/retrieve_from_ddb"),
             handler="retrieve_list.lambda_handler",
             function_name=f"{self.stack_name}-get-examples-list",
             memory_size=3008,
@@ -345,7 +343,7 @@ class IDPBedrockAPIConstructs(Construct):
             f"{self.stack_name}-put-example-lambda",
             runtime=self._python_runtime,
             architecture=self._architecture,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/upload_few_shot"),
+            code=_lambda.Code.from_asset("./src/lambda/upload_few_shot"),
             handler="upload_few_shot.lambda_handler",
             function_name=f"{self.stack_name}-put-example",
             memory_size=3008,
@@ -367,7 +365,7 @@ class IDPBedrockAPIConstructs(Construct):
             f"{self.stack_name}-presigned-url-lambda",
             runtime=self._python_runtime,
             architecture=self._architecture,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/get_presigned_url"),
+            code=_lambda.Code.from_asset("./src/lambda/get_presigned_url"),
             handler="get_presigned_url.lambda_handler",
             function_name=f"{self.stack_name}-get-presigned-url",
             memory_size=3008,
@@ -388,7 +386,7 @@ class IDPBedrockAPIConstructs(Construct):
             self,
             f"{self.stack_name}-textract-lambda",
             runtime=self._python_runtime,
-            code=_lambda.Code.from_asset("./assets/lambda/backend/run_textract"),
+            code=_lambda.Code.from_asset("./src/lambda/run_textract"),
             handler="run_textract.lambda_handler",
             function_name=f"{self.stack_name}-run-textract",
             memory_size=3008,
@@ -612,10 +610,10 @@ class IDPBedrockAPIConstructs(Construct):
                 iam.PolicyStatement(
                     actions=["Lambda:InvokeFunction"],
                     resources=[
-                        self.attributes_lambda.function_arn,
+                        self.idp_text_lambda.function_arn,
                         self.textract_lambda.function_arn,
                         self.read_office_lambda.function_arn,
-                        self.llm_attributes_lambda.function_arn,
+                        self.idp_image_lambda.function_arn,
                         self.bda_lambda.function_arn,
                     ],
                 )
@@ -644,13 +642,13 @@ class IDPBedrockAPIConstructs(Construct):
         self.idp_bedrock_state_machine = sfn.StateMachine(
             scope=self,
             id=f"{self.stack_name}-StepFunctions",
-            definition_body=sfn.DefinitionBody.from_file("assets/state_machine/idp_bedrock.json"),
+            definition_body=sfn.DefinitionBody.from_file("src/step_functions/state_machine.json"),
             definition_substitutions={
                 "LAMBDA_READ_OFFICE": self.read_office_lambda.function_arn,
                 "LAMBDA_RUN_TEXTRACT": self.textract_lambda.function_arn,
                 "LAMBDA_RUN_BDA": self.bda_lambda.function_arn,
-                "LAMBDA_EXTRACT_ATTRIBUTES": self.attributes_lambda.function_arn,
-                "LAMBDA_EXTRACT_ATTRIBUTES_LLM": self.llm_attributes_lambda.function_arn,
+                "LAMBDA_RUN_IDP_ON_TEXT": self.idp_text_lambda.function_arn,
+                "LAMBDA_RUN_IDP_ON_IMAGE": self.idp_image_lambda.function_arn,
             },
             role=self.stepfunctions_role,
             state_machine_name=f"{self.stack_name}-StepFunctions",
