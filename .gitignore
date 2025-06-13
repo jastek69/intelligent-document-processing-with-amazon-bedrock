@@ -53,7 +53,6 @@ ipython_config.py
 /uv.lock
 !assets/streamlit/uv.lock
 .venv
-.venv/
 env/
 venv/
 ENV/
