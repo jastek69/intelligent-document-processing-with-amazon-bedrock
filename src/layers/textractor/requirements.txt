@@ -1,0 +1,2 @@
+amazon-textract-textractor==1.9.2
+s3fs
