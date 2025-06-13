@@ -5,11 +5,9 @@ Copyright © Amazon.com and Affiliates
 import os
 from pathlib import Path
 
-from aws_cdk import Duration
-from aws_cdk import Aws, NestedStack, RemovalPolicy, Tags
+from aws_cdk import Aws, Duration, NestedStack, RemovalPolicy, Tags
 from aws_cdk import CfnOutput as output
 from aws_cdk import aws_cloudfront as cloudfront
-from aws_cdk.aws_cloudfront import FunctionEventType
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_elasticloadbalancingv2 as elbv2
@@ -17,6 +15,7 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
+from aws_cdk.aws_cloudfront import FunctionEventType
 
 # from aws_cdk import custom_resources as cr
 from aws_cdk.aws_cloudfront_origins import LoadBalancerV2Origin

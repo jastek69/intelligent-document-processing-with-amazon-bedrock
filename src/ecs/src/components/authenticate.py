@@ -5,14 +5,14 @@ Copyright © Amazon.com and Affiliates
 import base64
 import json
 import logging
-import sys
-import requests
 import os
+import sys
 from datetime import datetime
 
 import boto3
 import jwt
 import qrcode
+import requests
 import streamlit as st
 from botocore.exceptions import ClientError, ParamValidationError
 from jwt import PyJWKClient

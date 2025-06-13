@@ -16,12 +16,13 @@ from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
+
+from infra.constructs.api import IDPBedrockAPIConstructs
+from infra.constructs.buckets import ServerAccessLogsBucket
 from infra.constructs.cognito_auth import (
     CognitoAuthenticationConstruct,
     CognitoCallbackUpdater,
 )
-from infra.constructs.api import IDPBedrockAPIConstructs
-from infra.constructs.buckets import ServerAccessLogsBucket
 from infra.constructs.layers import IDPBedrockLambdaLayers
 from infra.stacks.ecs import IDPBedrockECSStack
 

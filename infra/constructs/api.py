@@ -6,8 +6,8 @@ import json
 
 import aws_cdk.aws_apigatewayv2 as _apigw
 import aws_cdk.aws_apigatewayv2_integrations as _integrations
-from aws_cdk import Duration, RemovalPolicy
 from aws_cdk import CfnOutput as output
+from aws_cdk import Duration, RemovalPolicy
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as ddb
 from aws_cdk import aws_iam as iam
