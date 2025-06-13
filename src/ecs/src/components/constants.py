@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    Streamlit constants
 """
 
 MAX_ATTRIBUTES = 50
@@ -28,6 +25,7 @@ SUPPORTED_EXTENSIONS = [
     "pdf",
     "png",
     "jpg",
+    "jpeg",
     "tiff",
     "docx",
     "doc",
@@ -38,12 +36,18 @@ SUPPORTED_EXTENSIONS = [
     "html",
     "htm",
     "md",
+    "csv",
 ]
 
 SUPPORTED_EXTENSIONS_BEDROCK = [
     "pdf",
     "png",
     "jpg",
+    "jpeg",
+]
+
+SUPPORTED_EXTENSIONS_BDA = [
+    "pdf",
 ]
 
 SAMPLE_ATTRIBUTES = [

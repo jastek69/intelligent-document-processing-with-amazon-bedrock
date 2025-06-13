@@ -1,7 +1,4 @@
 # Copyright © Amazon.com and Affiliates
-# ----------------------------------------------------------------------
-# File content:
-#       Docker image of the streamlit container
 
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.12-slim
 

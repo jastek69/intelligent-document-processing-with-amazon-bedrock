@@ -1,3 +1,7 @@
+"""
+Copyright © Amazon.com and Affiliates
+"""
+
 from pathlib import Path
 
 import boto3

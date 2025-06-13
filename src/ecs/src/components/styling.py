@@ -1,5 +1,5 @@
 """
-Helper functions with Streamlit UI styling
+Copyright © Amazon.com and Affiliates
 """
 
 import streamlit as st

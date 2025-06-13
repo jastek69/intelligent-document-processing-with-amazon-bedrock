@@ -1,3 +1,7 @@
+"""
+Copyright © Amazon.com and Affiliates
+"""
+
 import os
 
 import boto3

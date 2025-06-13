@@ -1,5 +1,5 @@
 """
-Helper functions with Streamlit UI elements
+Copyright © Amazon.com and Affiliates
 """
 
 import components.authenticate as authenticate

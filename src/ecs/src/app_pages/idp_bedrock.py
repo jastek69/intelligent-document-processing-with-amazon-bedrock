@@ -1,9 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-This code is being licensed under the terms of the Amazon Software License available at https://aws.amazon.com/asl/
-----------------------------------------------------------------------
-File content:
-    Streamlit frontend
 """
 
 #########################
@@ -58,6 +54,7 @@ from components.constants import (
     SAMPLE_PDFS,
     SUPPORTED_EXTENSIONS,
     SUPPORTED_EXTENSIONS_BEDROCK,
+    SUPPORTED_EXTENSIONS_BDA,
     TEMPERATURE_DEFAULT,
 )
 from components.frontend import show_empty_container, show_footer
@@ -66,7 +63,7 @@ from components.s3 import create_presigned_url
 from components.styling import set_page_styling
 from st_pages import add_indentation, show_pages_from_config
 
-LOGGER = logging.Logger("Streamlit", level=logging.DEBUG)
+LOGGER = logging.Logger("ECS", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
@@ -168,6 +165,7 @@ def clear_results() -> None:
     st.session_state["docs_uploader_key"] += 1
     st.session_state["attributes_uploader_key"] += 1
     st.session_state["few_shots_uploader_key"] += 1
+    st.session_state["instructions"] = ""
     for i in range(MAX_DOCS):
         if f"document_{i}" in st.session_state:
             st.session_state[f"document_{i}"] = ""
@@ -523,11 +521,10 @@ with st.container(border=True):
     tabs = [
         ":scroll: **1. Add Docs**",
         ":sparkles: **2. Describe Attributes**",
-        ":heavy_plus_sign: **3. Instructions (optional)**",
-        ":books: **4. Examples (optional)**",
+        ":heavy_plus_sign: **3. Additional Inputs (optional)**",
     ]
     if st.session_state["advanced_mode"]:
-        tab_docs, tab_attributes, tab_instructions, tab_few_shots = st.tabs(tabs)
+        tab_docs, tab_attributes, tab_advanced = st.tabs(tabs)
     else:
         tab_docs, tab_attributes = st.tabs(tabs[:2])
 
@@ -543,11 +540,11 @@ with tab_docs:
     if st.session_state["docs_input_type"] == "Upload documents":
         if st.session_state["parsing_mode"] == "Bedrock Data Automation":
             st.info(
-                "ℹ️ Parsing with Bedrock Data Automation only supports PDF files up to 20 pages via the app. For other file extensions, use other parsing modes or visit the Amazon Bedrock console."  # noqa: E501
+                "ℹ️ Parsing with Bedrock Data Automation supports PDF documents up to 20 pages. For longer files and other extensions, use Amazon Bedrock LLM parsing."  # noqa: E501
             )  # noqa: E501
         if st.session_state["parsing_mode"] == "Amazon Bedrock LLM":
             st.info(
-                f"ℹ️ Parsing with Amazon Bedrock LLM only supports vision LLMs and {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files. For other extensions, use other parsing modes or convert your files to PDF."  # noqa: E501
+                f"ℹ️ Parsing with Amazon Bedrock requires a vision LLM and supports {', '.join([x.upper() for x in SUPPORTED_EXTENSIONS_BEDROCK])} files. For other extensions, use Amazon Textract or convert to PDF."  # noqa: E501
             )
         if st.session_state["parsing_mode"] == "Amazon Textract":
             st.info(
@@ -557,7 +554,7 @@ with tab_docs:
             label="Upload your document(s):",
             accept_multiple_files=True,
             key=f"{st.session_state['docs_uploader_key']}",
-            type=["pdf"]
+            type=SUPPORTED_EXTENSIONS_BDA
             if st.session_state["parsing_mode"] == "Bedrock Data Automation"
             else SUPPORTED_EXTENSIONS_BEDROCK
             if st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
@@ -615,7 +612,7 @@ with tab_docs:
         st.session_state["docs"] = selected_docs
     LOGGER.info(f"Docs: {st.session_state['docs']}")
 
-# display uploaded pdfs
+# display documents
 if st.session_state["docs"]:
     st.markdown("#### 🔎 Preview")
     with st.container(border=True):
@@ -625,13 +622,16 @@ if st.session_state["docs"]:
                     st.text(doc)
             else:
                 with st.expander(f"📄 **{i + 1}. {doc.name}**"):
-                    # Store the original content before reading
                     content = doc.read()
-                    base64_pdf = base64.b64encode(content).decode("utf-8")
-                    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'  # noqa: E501
-                    st.markdown(pdf_display, unsafe_allow_html=True)
+                    if doc.name.lower().endswith((".jpg", ".jpeg", ".png")):
+                        st.image(content)
+                    elif doc.name.lower().endswith(".pdf"):
+                        base64_pdf = base64.b64encode(content).decode("utf-8")
+                        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'  # noqa: E501
+                        st.markdown(pdf_display, unsafe_allow_html=True)
+                    else:
+                        st.info("Preview not available.")
                     doc.seek(0)
-
 # attributes
 with tab_attributes:
     st.radio(
@@ -694,7 +694,8 @@ with tab_attributes:
 
 # instructions
 if st.session_state["advanced_mode"]:
-    with tab_instructions:
+    with tab_advanced:
+        st.markdown("##### 📝 Document-Level Instructions")
         instructions = st.text_area(
             placeholder="Please enter the instructions",
             label="You can provide optional document-level instructions such as formatting descriptions.",  # noqa: E501
@@ -709,7 +710,9 @@ else:
 # examples
 if st.session_state["advanced_mode"]:
     multimodal_on = st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
-    with tab_few_shots:
+    with tab_advanced:
+        st.markdown("---")
+        st.markdown("##### 📚 Few-Shot Examples")
         if not multimodal_on:
             st.radio(
                 label="Please provide few-shot examples",  # noqa: E501

@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    Cognito authentication utilities
 """
 
 import base64
@@ -21,7 +18,7 @@ from botocore.exceptions import ClientError, ParamValidationError
 from jwt import PyJWKClient
 from qrcode.image.styledpil import StyledPilImage
 
-LOGGER = logging.Logger("Streamlit", level=logging.DEBUG)
+LOGGER = logging.Logger("ECS", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
@@ -235,7 +232,7 @@ def get_user_attributes(id_tkn: str) -> dict:
 
 def set_st_state_vars() -> None:
     """
-    Sets the Streamlit state variables after user authentication.
+    Set Streamlit state variables after user authentication
 
     Parameters
     ----------

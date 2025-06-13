@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    Streamlit Frontend
 """
 
 import logging
@@ -31,7 +28,7 @@ if "COVER_IMAGE_URL" not in os.environ:
     print("Loading env variables from .env file")
     load_dotenv(override=True)
 
-LOGGER = logging.Logger("Streamlit", level=logging.DEBUG)
+LOGGER = logging.Logger("ECS", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)

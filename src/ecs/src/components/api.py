@@ -1,5 +1,5 @@
 """
-Helper classes for LLM inference
+Copyright © Amazon.com and Affiliates
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import aiohttp
 import boto3
 import streamlit as st
 
-LOGGER = logging.Logger("Streamlit", level=logging.DEBUG)
+LOGGER = logging.Logger("ECS", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
