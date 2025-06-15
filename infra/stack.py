@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    IDP Bedrock stack
 """
 
 import json
@@ -19,14 +16,15 @@ from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_s3 as _s3
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
+
+from infra.constructs.api import IDPBedrockAPIConstructs
+from infra.constructs.buckets import ServerAccessLogsBucket
 from infra.constructs.cognito_auth import (
     CognitoAuthenticationConstruct,
     CognitoCallbackUpdater,
 )
-from infra.constructs.api import IDPBedrockAPIConstructs
-from infra.constructs.buckets import ServerAccessLogsBucket
 from infra.constructs.layers import IDPBedrockLambdaLayers
-from infra.stacks.streamlit import IDPBedrockStreamlitStack
+from infra.stacks.ecs import IDPBedrockECSStack
 
 LOGGER = logging.Logger("STACK-BUILD", level=logging.DEBUG)
 HANDLER = logging.StreamHandler(sys.stdout)
@@ -42,7 +40,7 @@ class IDPBedrockStack(Stack):
     """
 
     def __init__(self, scope: Construct, stack_name: str, config: Dict[str, Any], **kwargs) -> None:  # noqa: C901
-        description = "IDP Bedrock (uksb-0rxb2u6bob)"
+        description = "IDP with Amazon Bedrock (uksb-0rxb2u6bob)"
         super().__init__(scope, stack_name, description=description, **kwargs)
 
         ## Set architecture and Python Runtime
@@ -213,49 +211,49 @@ class IDPBedrockStack(Stack):
         LOGGER.info("Creating SSM parameters")
         self.ssm_cover_image_url = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmCoverImageUrl",
+            f"{stack_name}-SSM-CoverImageUrl",
             parameter_name=f"/{stack_name}/ecs/COVER_IMAGE_URL",
-            string_value=config["streamlit"]["cover_image_url"],
+            string_value=config["frontend"]["cover_image_url"],
         )
         self.ssm_assistant_avatar_url = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmAssistantAvatarUrl",
+            f"{stack_name}-SSM-AssistantAvatarUrl",
             parameter_name=f"/{stack_name}/ecs/ASSISTANT_AVATAR_URL",
-            string_value=config["streamlit"]["assistant_avatar"],
+            string_value=config["frontend"]["assistant_avatar"],
         )
         self.ssm_bedrock_model_ids = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmBedrockModelIds",
+            f"{stack_name}-SSM-BedrockModelIds",
             parameter_name=f"/{stack_name}/ecs/BEDROCK_MODEL_IDS",
             string_value=json.dumps(config["bedrock"].get("model_ids", [])),
         )
         self.ssm_region = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmRegion",
+            f"{stack_name}-SSM-Region",
             parameter_name=f"/{stack_name}/ecs/REGION",
             string_value=self.region,
         )
         self.ssm_bucket_name = ssm.StringParameter(
             self,
-            f"{stack_name}-SsmBucketName",
+            f"{stack_name}-SSM-BucketName",
             parameter_name=f"/{stack_name}/ecs/BUCKET_NAME",
             string_value=self.s3_data_bucket.bucket_name,
         )
         self.bucket_name_output = output(self, id="S3BucketName", value=self.s3_data_bucket.bucket_name)
 
-        ## **************** Streamlit NestedStack ****************
-        LOGGER.info("Creating Streamlit nested stack")
-        if config["streamlit"]["deploy_streamlit"]:
-            self.streamlit_constructs = IDPBedrockStreamlitStack(
+        ## **************** ECS UI NestedStack ****************
+        LOGGER.info("Creating ECS UI nested stack")
+        if config["frontend"]["deploy_ecs"]:
+            self.streamlit_constructs = IDPBedrockECSStack(
                 self,
-                f"{stack_name}-STREAMLIT",
+                f"{stack_name}-ECS",
                 stack_name=stack_name,
                 s3_data_bucket=self.s3_data_bucket,
                 s3_logs_bucket=s3_logs_bucket.bucket,
-                ecs_cpu=config["streamlit"]["ecs_cpu"],
-                ecs_memory=config["streamlit"]["ecs_memory"],
-                open_to_public_internet=config["streamlit"]["open_to_public_internet"],
-                ip_address_allowed=config["streamlit"].get("ip_address_allowed"),
+                ecs_cpu=config["frontend"]["ecs_cpu"],
+                ecs_memory=config["frontend"]["ecs_memory"],
+                open_to_public_internet=config["frontend"]["open_to_public_internet"],
+                ip_address_allowed=config["frontend"].get("ip_address_allowed"),
                 ssm_client_id=self.cognito_authn.ssm_client_id,
                 ssm_user_pool_id=self.cognito_authn.ssm_user_pool_id,
                 ssm_cognito_domain=self.cognito_authn.ssm_cognito_domain,

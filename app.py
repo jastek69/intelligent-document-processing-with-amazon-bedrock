@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-Package content:
-    Entry point of the CDK application
 """
 
 import os

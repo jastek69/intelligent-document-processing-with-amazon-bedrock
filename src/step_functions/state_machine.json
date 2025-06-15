@@ -1,0 +1,323 @@
+{
+  "Comment": "IDP Bedrock Step Functions",
+  "StartAt": "Map",
+  "States": {
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "Choice",
+        "States": {
+          "Choice": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "And": [
+                  {
+                    "Or": [
+                      {
+                        "Variable": "$.file_name",
+                        "StringMatches": "*/*.jpg"
+                      },
+                      {
+                        "Variable": "$.file_name",
+                        "StringMatches": "*/*.jpeg"
+                      },
+                      {
+                        "Variable": "$.file_name",
+                        "StringMatches": "*/*.png"
+                      },
+                      {
+                        "Variable": "$.file_name",
+                        "StringMatches": "*/*.pdf"
+                      }
+                    ]
+                  },
+                  {
+                    "Variable": "$.parsing_mode",
+                    "StringEquals": "Amazon Bedrock LLM"
+                  }
+                ],
+                "Next": "Run-IDP-On-Image"
+              },
+              {
+                "Or": [
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.doc"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.docx"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.ppt"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.pptx"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.xls"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.xlsx"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.html"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.htm"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.md"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.markdown"
+                  },
+                  {
+                    "Variable": "$.file_name",
+                    "StringMatches": "*/*.csv"
+                  }
+                ],
+                "Next": "Read-Office-File"
+              },
+              {
+                "And": [
+                  {
+                    "Variable": "$.parsing_mode",
+                    "StringEquals": "Bedrock Data Automation"
+                  }
+                ],
+                "Next": "Run-BDA"
+              }
+            ],
+            "Default": "Extract-text"
+          },
+          "Read-Office-File": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_READ_OFFICE}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
+            ],
+            "ResultSelector": {
+              "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
+            },
+            "OutputPath": "$.merged",
+            "Next": "Run-IDP-On-Text"
+          },
+          "Extract-text": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_RUN_TEXTRACT}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
+            ],
+            "Next": "Run-IDP-On-Text",
+            "ResultSelector": {
+              "merged.$": "States.JsonMerge($$.Execution.Input, States.StringToJson($.Payload.body), false)"
+            },
+            "OutputPath": "$.merged"
+          },
+          "Run-IDP-On-Text": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_RUN_IDP_ON_TEXT}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "BackoffRate": 2,
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "ResultSelector": {
+              "llm_answer.$": "States.StringToJson($.Payload.body)"
+            },
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Comment": "Catch Lambda failed execution",
+                "ResultPath": "$.error",
+                "Next": "Pass"
+              }
+            ],
+            "End": true
+          },
+          "Run-BDA": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_RUN_BDA}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "BackoffRate": 2,
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "ResultSelector": {
+              "llm_answer.$": "States.StringToJson($.Payload.body)"
+            },
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Comment": "Catch Lambda failed execution",
+                "ResultPath": "$.error",
+                "Next": "Pass"
+              }
+            ],
+            "End": true
+          },
+          "Run-IDP-On-Image": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "Payload": {
+                "body.$": "$"
+              },
+              "FunctionName": "${LAMBDA_RUN_IDP_ON_IMAGE}"
+            },
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              },
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "BackoffRate": 2,
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "JitterStrategy": "FULL"
+              }
+            ],
+            "ResultSelector": {
+              "llm_answer.$": "States.StringToJson($.Payload.body)"
+            },
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Comment": "Catch Lambda failed execution",
+                "ResultPath": "$.error",
+                "Next": "Pass"
+              }
+            ],
+            "End": true
+          },
+          "Pass": {
+            "Type": "Pass",
+            "End": true,
+            "Parameters": {
+              "file_name.$": "$.file_name",
+              "error.$": "$.error"
+            }
+          }
+        }
+      },
+      "End": true,
+      "ItemsPath": "$.documents",
+      "ItemSelector": {
+        "file_name.$": "$$.Map.Item.Value",
+        "attributes.$": "$.attributes",
+        "model_params.$": "$.model_params",
+        "parsing_mode.$": "$.parsing_mode",
+        "few_shots.$": "$.few_shots",
+        "instructions.$": "$.instructions"
+      },
+      "MaxConcurrency": 10
+    }
+  }
+}

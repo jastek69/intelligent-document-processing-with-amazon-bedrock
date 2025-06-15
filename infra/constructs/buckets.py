@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    Bucket constructs
 """
 
 from aws_cdk import Aws, RemovalPolicy

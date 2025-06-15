@@ -2,44 +2,38 @@
 
 🚀 Extract information from unstructured documents at scale with Amazon Bedrock
 
-![screenshots/diagram.png](screenshots/diagram.png)
+![media/diagram.png](media/diagram.png)
+
+Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from legal contracts, analyzing customer reviews, and more.
+
+This repo provides an AWS CDK solution for intelligent document processing in seconds using generative AI.
+
+**Key features:**
+- Extract different information, including:
+  - Well-defined entities (name, title, etc)
+  - Numeric scores (sentiment, urgency, etc)
+  - Free-form content (summary, suggested response, etc)
+- Simply describe the attributes to be extracted without costly data annotation or model training
+- Leverage Amazon Bedrock Data Automation and multi-modal LLMs on Amazon Bedrock
+- Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo frontend](src/ecs/src/Home.py) to process PDFs, MS Office, images, and other formats
 
 
 ## Contents
 
-- [Overview](#overview)
-- [Demo video](#demo)
-- [Deploy the app](#deploy-the-app)
-- [Use the app](#use-the-app)
+- [Demo](#demo)
 - [Architecture](#architecture)
+- [Deployment](#deployment)
+- [Usage](#usage)
 - [Team](#team)
 - [Security](#security)
 - [License](#license)
 
 
-# 🔥 Overview
-
-Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from internal documents, analyzing customer reviews, and more.
-
-This repo provides an AWS CDK solution that extracts information from documents in minutes using generative AI.
-
-- Extract different information types, including:
-  - Well-defined entities (e.g., name, title)
-  - Numeric scores (e.g., sentiment, urgency)
-  - Free-form content (e.g., summary, suggested response)
-- Describe the attributes to be extracted from your docs without costly data annotation or model training
-- Leverage Amazon Bedrock Data Automation, multi-modal LLMs on Amazon Bedrock, and/or Amazon Textract
-- Use [Python API](demo/idp_bedrock_demo.ipynb) or [demo UI](assets/streamlit/src/Home.py) to process PDFs, MS Office, images, and get JSON output
-
 # 📹 Demo
-
-**Web UI Video**
-
-📹 [Click here](screenshots/idp_demo.mp4) to watch a short demo of the app.
 
 **Example API Call**
 
-Refer to [the demo notebook](demo/idp_bedrock_demo.ipynb) for the API implementation and usage examples:
+Refer to [the demo notebook](api/idp_bedrock_demo.ipynb) for the API implementation and usage examples:
 
 ```python
 docs = ['doc1', 'doc2']
@@ -58,15 +52,18 @@ run_idp_bedrock_api(
 # {'delay': 3, 'shipment_id': '678623', 'summary': 'summary2'}]
 ```
 
-**Example Web UI**
+**Web UI Video**
 
-<p float="left">
-  <img src="screenshots/example_input.png" width="49%" />
-  <img src="screenshots/example_output.png" width="49%" />
-</p>
+https://github.com/user-attachments/assets/cac8a6e1-2e70-4ca0-a9e7-d959619941f4
+
+# 🏗️ Architecture
+
+This diagram depicts a high-level architecture of the solution:
+
+![media/architecture.png](media/architecture.png)
 
 
-# 🔧 Deploy the App
+# 🔧 Deployment
 
 To deploy the app to your AWS account, you can use a local IDE or create a SageMaker Notebook instance.
 
@@ -90,7 +87,7 @@ cd <folder with the downloaded asset>
 sh install_deps.sh
 ```
 
-When working locally, make sure you have installed the following tools, languages as well as access to the target AWS account:
+When working locally, make sure you have installed the following, as well as access to the target AWS account:
 
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - [AWS Account](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html): configure an AWS account with a profile `$ aws configure --profile [profile-name]`
@@ -116,12 +113,12 @@ source .venv/bin/activate
 Copy the `config-example.yml` to a `config.yml` file and specify your project name and modules you would like to deploy (e.g., whether to deploy a UI).
 
 ```yaml
-stack_name: idp-bedrock   # Name of your demo, will be used as stack name and prefix for resources
+stack_name: idp-test  # Used as stack name and prefix for resources (<16 chars, cannot start with "aws")
 
 ...
 
-streamlit:
-  deploy_streamlit: True
+frontend:
+  deploy_ecs: True  # Whether to deploy demo frontend on ECS
 ```
 
 
@@ -130,7 +127,7 @@ streamlit:
 - Open the target AWS account
 - Open AWS Bedrock console and navigate to the region specified in `config.yml`
 - Select "Model Access" in the left sidebar and browse through the list of available LLMs
-- Make sure to request and enable access for the model IDs that are specified in  `config.yml`
+- Make sure to request and enable access for the model IDs specified in `config.yml`
 
 
 ### 6. CDK Bootstrap
@@ -141,19 +138,13 @@ Bootstrap CDK in your account. When working locally, use the profile name you ha
 cdk bootstrap --profile [PROFILE_NAME]
 ```
 
-Note: you can easily configure multiple accounts and bootstrap and deploy the framework to different accounts.
-
-
 ### 7. CDK Deploy
 
-Make sure the Docker daemon is running in case you deploy the Streamlit frontend. On Mac, you can just open Docker Desktop. On SageMaker, Docker daemon is already running.
+Make sure the Docker daemon is running. On Mac, you can open Docker Desktop. On SageMaker, Docker daemon is already running.
 
 ```bash
 cdk deploy --profile [PROFILE_NAME]
 ```
-
-Note: if you encounter `/bin/sh: python3: command not found`, change `python3` in `cdk.json` to your Python alias.
-
 
 ### Clean up
 
@@ -163,7 +154,7 @@ You can delete the CDK stack from your AWS account by running:
 cdk destroy --profile [AWS_PROFILE_NAME]
 ```
 
-or manually deleting the CloudFormation from the AWS console.
+or manually delete the CloudFormation stack from the AWS console.
 
 
 ### Common Issues
@@ -176,28 +167,20 @@ Deploying CDK / CloudFormation stacks requires near Admin Permissions. Make sure
 
 When deleting the stack, it may delete everything except for the created S3 bucket, which will contain the uploaded documents by the user and their processed versions. In order to actually delete this s3 bucket, you may need to empty it first. This is an expected behavior as all s3 buckets may contain sensitive data to the users.
 
+#### `/bin/sh: python3: command not found`
 
-# 💻 Use the App
+This happens die to a wrong Python path. Change `python3` in `cdk.json` to your Python alias.
 
-## Option 1: Run API with Python
+
+# 💻 Usage
+
+## Option 1: Run API from Python
 
 Follow steps in this [notebook](demo/idp_bedrock_demo.ipynb) to run a job via an API call. You will need to:
-- provide input document text(s)
+- provide input document(s)
 - provide a list of features to be extracted
 
-## Option 2: Run web app
-
-### Add Cognito Users
-
-From the console:
-- Open the Amazon Cognito Console in the AWS console
-- Choose the created user pool, navigate to users, and click "create user"
-- Provide the user name and a temporary password or email address for auto-generated password
-    - Users will be able to log into the frontend using Cognito credentials
-
-As part of the code:
-- Add a list of Cognito user emails in `config.yml` in the authentication section
-- Each of the users will receive a temporary password from no-reply@verificationemail.com
+## Option 2: Run a web app
 
 ### Access the Frontend
 
@@ -208,18 +191,22 @@ or
 - Open the AWS console, and go to CloudFront
 - Copy the Domain name of the created distribution
 
+Login credentials are available from:
+- User name: email from a list of Cognito user emails in `config.yml` in `authentication` section
+- Password: temporary password received by email from `no-reply@verificationemail.com` after deployment
+
 #### Local Testing
 
-You can run the Streamlit frontend locally for testing and development by following these steps:
+You can run the demo frontend locally for testing and development by following these steps:
 
 - Deploy the CDK stack once
-- Go to ```assets/streamlit/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
+- Go to ```src/ecs/.env``` and set ```STACK_NAME``` to your stack name in the `config.yml`
 - Provide AWS credentials
-  - You can add AWS credentials to the ```assets/streamlit/.env``` file
+  - You can add AWS credentials to the ```src/ecs/.env``` file
   - Or simply export credentials in your terminal, e.g. ```export AWS_PROFILE=<profile>```
 - Navigate to the frontend folder, create environment and install dependencies:
 ```bash
-cd assets/streamlit
+cd src/ecs
 uv venv
 source .venv/bin/activate
 uv sync --extra dev
@@ -228,25 +215,18 @@ uv sync --extra dev
 - Copy the local URL from the terminal output and paste in the address bar of your browser
 - Make sure that the local URL you use is http://localhost:8501. It will not work otherwise
 
-In order to keep coding standards and formatting consistent, we use `pre-commit`. This can be run from the terminal via `uv run pre-commit run -a`.
-
-# 🏗️ Architecture
-
-The following diagram illustrates the high-level architecture of this solution:
-
-![diagram/architecture.png](diagram/architecture.png)
 
 # 👥 Team
 
 **Core team:**
 
-| ![image](team/nikita.jpeg) | ![image](team/nuno.jpeg) |
+| ![image](media/team/nikita.jpeg) | ![image](media/team/nuno.jpeg) |
 |---|---|
 | [Nikita Kozodoi](https://www.linkedin.com/in/kozodoi/) | [Nuno Castro](https://www.linkedin.com/in/nunoconstantinocastro/) |
 
 **Contributors:**
 
-| ![image](team/romain.jpeg) | ![image](team/zainab.jpeg) | ![image](team/egor.jpeg) | ![image](team/huong.jpeg) | ![image](team/aiham.jpeg) | ![image](team/elizaveta.jpeg) | ![image](team/babs.jpeg) | ![image](team/ennio.jpeg) |
+| ![image](media/team/romain.jpeg) | ![image](media/team/zainab.jpeg) | ![image](media/team/egor.jpeg) | ![image](media/team/huong.jpeg) | ![image](media/team/aiham.jpeg) | ![image](media/team/elizaveta.jpeg) | ![image](media/team/babs.jpeg) | ![image](media/team/ennio.jpeg) |
 |---|---|---|---|---|---|---|---|
 | [Romain Besombes](https://www.linkedin.com/in/romainbesombes/) | [Zainab Afolabi](https://www.linkedin.com/in/zainabafolabi/) | [Egor Krasheninnikov](https://www.linkedin.com/in/egorkrash/) | [Huong Vu](https://www.linkedin.com/in/huong-vu/) | [Aiham Taleb](https://www.linkedin.com/in/aihamtaleb/) | [Elizaveta Zinovyeva](https://www.linkedin.com/in/zinov-liza/) | [Babs Khalidson](https://www.linkedin.com/in/babskhalidson/) | [Ennio Pastore](https://www.linkedin.com/in/enniopastore/) |
 
@@ -288,6 +268,8 @@ Note: this asset represents a proof-of-value for the services included and is no
 - **Serverless**:
   - Lambda
     - Periodically scan all AWS Lambda container images for vulnerabilities according to lifecycle policies. AWS Inspector can be used for that.
+
+In order to keep coding standards and formatting consistent, we use `pre-commit`. This can be run from the terminal via `uv run pre-commit run -a`.
 
 
 ## 📝 License

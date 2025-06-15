@@ -1,8 +1,5 @@
 """
 Copyright © Amazon.com and Affiliates
-----------------------------------------------------------------------
-File content:
-    IDP Bedrock API constructs
 """
 
 from aws_cdk import Aws, BundlingOptions, BundlingOutput, DockerImage, RemovalPolicy
@@ -34,7 +31,7 @@ class IDPBedrockLambdaLayers(Construct):
             f"{stack_name}-idp-bedrock-layer",
             compatible_runtimes=[self._runtime],
             compatible_architectures=[self._architecture],
-            code=_lambda.Code.from_asset("./assets/layers/idp_bedrock"),
+            code=_lambda.Code.from_asset("./src/layers/idp_bedrock"),
             description="IDP Bedrock layer for with different retrieval and model options",
             layer_version_name=f"{stack_name}-idp-bedrock-layer",
         )
@@ -42,19 +39,19 @@ class IDPBedrockLambdaLayers(Construct):
         # Libraries
         self.idp_bedrock_deps = self._create_layer_from_asset(
             layer_name=f"{stack_name}-idp-bedrock-third-party-deps-layer",
-            path_to_layer_assets="./assets/layers/idp_bedrock/python",
+            path_to_layer_assets="./src/layers/idp_bedrock/python",
             description="Lambda layer including upgraded boto3 (e.g. for Bedrock), Langchain, OpenSearchPy, etc.",
         )
 
         self.textractor = self._create_layer_from_asset(
             layer_name=f"{stack_name}-textractor",
-            path_to_layer_assets="./assets/layers/textractor/",
+            path_to_layer_assets="./src/layers/textractor/",
             description="Lambda layer that contains dependencies for textract",
         )
 
         self.epd = self._create_layer_from_asset(
             layer_name=f"{stack_name}-epd",
-            path_to_layer_assets="./assets/layers/extra_dependencies/",
+            path_to_layer_assets="./src/layers/extra_deps/",
             description="Lambda layer that contains pandas for textractor",
         )
 

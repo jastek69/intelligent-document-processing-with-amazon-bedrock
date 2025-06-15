@@ -40,7 +40,7 @@ skip_gitignore = true
 [tool.ruff]
 lint.select = ["E", "F", "C", "W", "R", "B", "Q"]
 line-length = 120
-target-version="py39"
+target-version="py312"
 extend-include = ["*.ipynb"]
 exclude = [
     ".bzr",

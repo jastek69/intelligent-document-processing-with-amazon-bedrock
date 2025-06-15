@@ -1,0 +1,13 @@
+Document:
+<document>
+{document}
+</document>
+
+Attributes to be extracted:
+<attributes>
+{attributes}
+</attributes>
+
+<document_level_instructions_placeholder>
+
+Output:

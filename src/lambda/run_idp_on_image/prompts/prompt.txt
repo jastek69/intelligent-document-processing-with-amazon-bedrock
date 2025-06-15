@@ -1,0 +1,18 @@
+Extract attributes from the attached images and remember to provide a valid JSON file in the following format:
+<json>
+{{
+    "attribute_1": "attribute_1 value",
+    "attribute_2": "attribute_2 value",
+    ...
+    "attribute_n": "attribute_n value",
+}}
+</json>
+
+Attributes to be extracted:
+<attributes>
+{attributes}
+</attributes>
+
+<document_level_instructions_placeholder>
+
+Output:

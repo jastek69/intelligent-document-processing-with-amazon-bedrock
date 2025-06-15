@@ -51,9 +51,8 @@ ipython_config.py
 # uv
 .python-version
 /uv.lock
-!assets/streamlit/uv.lock
+!src/ecs/uv.lock
 .venv
-.venv/
 env/
 venv/
 ENV/
