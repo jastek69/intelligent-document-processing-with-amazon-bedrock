@@ -2,8 +2,6 @@
 
 🚀 Extract information from unstructured documents at scale with Amazon Bedrock
 
-🌎 Open-source asset is published at [aws-samples GitHub](https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock)
-
 ![media/diagram.png](media/diagram.png)
 
 Converting documents into a structured database is a recurring business task. Common use cases include creating a product feature table from article descriptions, extracting meta-data from legal contracts, analyzing customer reviews, and more.
