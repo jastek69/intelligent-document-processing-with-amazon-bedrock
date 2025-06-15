@@ -56,10 +56,7 @@ run_idp_bedrock_api(
 
 **Web UI Video**
 
-![](media/idp_demo.mp4)
-
-<video src="media/idp_demo.mp4"></video>
-
+https://github.com/user-attachments/assets/cac8a6e1-2e70-4ca0-a9e7-d959619941f4
 
 # 🏗️ Architecture
 
