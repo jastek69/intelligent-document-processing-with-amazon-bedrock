@@ -58,6 +58,8 @@ run_idp_bedrock_api(
 
 ![](media/idp_demo.mp4)
 
+<video src="media/idp_demo.mp4"></video>
+
 
 # 🏗️ Architecture
 
