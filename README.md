@@ -67,14 +67,14 @@ This diagram depicts a high-level architecture of the solution:
 
 To deploy the app to your AWS account, you can use a local IDE or create a SageMaker Notebook instance.
 
-We recommend using SageMaker to avoid installing extra requirements. Set up `ml.m5.large` instance and make sure the IAM role attached to the notebook has sufficient permissions for deploying CloudFormation stacks.
+We recommend using SageMaker to avoid installing extra requirements. Set up `ml.t3.large` instance and make sure the IAM role attached to the notebook has sufficient permissions for deploying CloudFormation stacks.
 
 ### 1. Clone the Repo
 
 Clone the repo to a location of your choice:
 
 ```bash
-git clone https://github.com/aws-samples/process-complex-documents-with-amazon-bedrock.git
+git clone https://github.com/aws-samples/intelligent-document-processing-with-amazon-bedrock.git
 ```
 
 
@@ -83,7 +83,7 @@ git clone https://github.com/aws-samples/process-complex-documents-with-amazon-b
 When working from a SageMaker Notebook instance, run this script to install all missing requirements:
 
 ```bash
-cd <folder with the downloaded asset>
+cd intelligent-document-processing-with-amazon-bedrock
 sh install_deps.sh
 ```
 
@@ -92,7 +92,6 @@ When working locally, make sure you have installed the following, as well as acc
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - [AWS Account](https://docs.aws.amazon.com/cli/v1/userguide/cli-chap-configure.html): configure an AWS account with a profile `$ aws configure --profile [profile-name]`
 - [Node.js](https://nodejs.org/en/download/package-manager)
-- [IDE for your programming language](https://code.visualstudio.com/)
 - [AWS CDK Toolkit](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
 - [Python 3.9+](https://www.python.org/downloads/)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) - Fast Python package installer and resolver
@@ -101,7 +100,7 @@ When working locally, make sure you have installed the following, as well as acc
 
 ### 3. Activate the Environment
 
-Navigate to the project folder and execute the following script to create a virtual environment on macOS or Linux and install dependencies using uv:
+Navigate to the repo folder and execute the following script to create a virtual environment on macOS or Linux:
 
 ```bash
 sh install_env.sh
@@ -110,7 +109,7 @@ source .venv/bin/activate
 
 ### 4. Configure the Stack
 
-Copy the `config-example.yml` to a `config.yml` file and specify your project name and modules you would like to deploy (e.g., whether to deploy a UI).
+Copy the `config-example.yml` to a `config.yml` file and specify your project name and modules you would like to deploy (e.g., whether to deploy a UI). Make sure you add your user email to the Amazon Cognito users list.
 
 ```yaml
 stack_name: idp-test  # Used as stack name and prefix for resources (<16 chars, cannot start with "aws")
