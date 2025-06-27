@@ -1,0 +1,13 @@
+image: python:3.12
+
+stages:
+  - lint
+
+before_script:
+  - pip install -U pip setuptools wheel
+
+lint:
+  stage: lint
+  script:
+    - pip install pre-commit
+    - pre-commit run --all-files
