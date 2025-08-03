@@ -11,6 +11,7 @@ from boto3.session import Session
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
+
 async def test_deployed_mcp_server():
     """Test the deployed MCP server"""
     boto_session = Session()
@@ -21,31 +22,28 @@ async def test_deployed_mcp_server():
 
     try:
         # Retrieve stored configuration
-        ssm_client = boto3.client('ssm', region_name=region)
-        secrets_client = boto3.client('secretsmanager', region_name=region)
+        ssm_client = boto3.client("ssm", region_name=region)
+        secrets_client = boto3.client("secretsmanager", region_name=region)
 
         # Get agent ARN
-        agent_arn_response = ssm_client.get_parameter(Name='/tabulate-mcp/runtime/agent_arn')
-        agent_arn = agent_arn_response['Parameter']['Value']
+        agent_arn_response = ssm_client.get_parameter(Name="/tabulate-mcp/runtime/agent_arn")
+        agent_arn = agent_arn_response["Parameter"]["Value"]
         print(f"✅ Retrieved Agent ARN: {agent_arn}")
 
         # Get credentials
-        response = secrets_client.get_secret_value(SecretId='tabulate-mcp/cognito/credentials')
-        credentials = json.loads(response['SecretString'])
-        bearer_token = credentials['bearer_token']
-        print(f"✅ Retrieved bearer token")
+        response = secrets_client.get_secret_value(SecretId="tabulate-mcp/cognito/credentials")
+        credentials = json.loads(response["SecretString"])
+        bearer_token = credentials["bearer_token"]
+        print("✅ Retrieved bearer token")
 
     except Exception as e:
         print(f"❌ Error retrieving configuration: {e}")
         sys.exit(1)
 
     # Construct MCP URL
-    encoded_arn = agent_arn.replace(':', '%3A').replace('/', '%2F')
+    encoded_arn = agent_arn.replace(":", "%3A").replace("/", "%2F")
     mcp_url = f"https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
-    headers = {
-        "authorization": f"Bearer {bearer_token}",
-        "Content-Type": "application/json"
-    }
+    headers = {"authorization": f"Bearer {bearer_token}", "Content-Type": "application/json"}
 
     print(f"\n🔗 Connecting to: {mcp_url}")
 
@@ -77,10 +75,7 @@ async def test_deployed_mcp_server():
                 # Test list_supported_models
                 try:
                     print("\n➡️  Testing list_supported_models...")
-                    models_result = await session.call_tool(
-                        name="list_supported_models",
-                        arguments={}
-                    )
+                    models_result = await session.call_tool(name="list_supported_models", arguments={})
                     print(f"   ✅ Result: {models_result.content[0].text}")
                 except Exception as e:
                     print(f"   ❌ Error: {e}")
@@ -88,10 +83,7 @@ async def test_deployed_mcp_server():
                 # Test get_bucket_info
                 try:
                     print("\n➡️  Testing get_bucket_info...")
-                    bucket_result = await session.call_tool(
-                        name="get_bucket_info",
-                        arguments={}
-                    )
+                    bucket_result = await session.call_tool(name="get_bucket_info", arguments={})
                     print(f"   ✅ Result: {bucket_result.content[0].text}")
                 except Exception as e:
                     print(f"   ❌ Error: {e}")
@@ -102,6 +94,7 @@ async def test_deployed_mcp_server():
     except Exception as e:
         print(f"❌ Error connecting to MCP server: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(test_deployed_mcp_server())

@@ -11,6 +11,7 @@ from boto3.session import Session
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
+
 async def test_with_demo_document():
     """Test the MCP server with a demo document"""
     boto_session = Session()
@@ -42,10 +43,7 @@ async def test_with_demo_document():
     # Construct MCP URL
     encoded_arn = agent_arn.replace(":", "%3A").replace("/", "%2F")
     mcp_url = f"https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
-    headers = {
-        "authorization": f"Bearer {bearer_token}",
-        "Content-Type": "application/json"
-    }
+    headers = {"authorization": f"Bearer {bearer_token}", "Content-Type": "application/json"}
 
     print("\n🔗 Connecting to MCP server...")
 
@@ -69,22 +67,10 @@ async def test_with_demo_document():
 
                     # Define attributes to extract (similar to demo notebook)
                     attributes = [
-                        {
-                            "name": "customer_name",
-                            "description": "name of the customer who wrote the email"
-                        },
-                        {
-                            "name": "sentiment",
-                            "description": "sentiment of the email (positive, negative, neutral)"
-                        },
-                        {
-                            "name": "urgency",
-                            "description": "urgency level of the email (high, medium, low)"
-                        },
-                        {
-                            "name": "main_topic",
-                            "description": "main topic or subject of the email"
-                        }
+                        {"name": "customer_name", "description": "name of the customer who wrote the email"},
+                        {"name": "sentiment", "description": "sentiment of the email (positive, negative, neutral)"},
+                        {"name": "urgency", "description": "urgency level of the email (high, medium, low)"},
+                        {"name": "main_topic", "description": "main topic or subject of the email"},
                     ]
 
                     extraction_result = await session.call_tool(
@@ -95,9 +81,9 @@ async def test_with_demo_document():
                             "parsing_mode": "Amazon Bedrock LLM",
                             "model_params": {
                                 "model_id": "us.anthropic.claude-3-haiku-20240307-v1:0",
-                                "temperature": 0.1
-                            }
-                        }
+                                "temperature": 0.1,
+                            },
+                        },
                     )
 
                     print("✅ Extraction completed!")
@@ -126,10 +112,7 @@ async def test_with_demo_document():
                 # Test list_supported_models
                 try:
                     print("➡️  Getting supported models...")
-                    models_result = await session.call_tool(
-                        name="list_supported_models",
-                        arguments={}
-                    )
+                    models_result = await session.call_tool(name="list_supported_models", arguments={})
                     models_data = json.loads(models_result.content[0].text)
                     print(f"✅ Found {len(models_data['models'])} supported models")
                     print(f"   Default model: {models_data['default_model']}")
@@ -139,10 +122,7 @@ async def test_with_demo_document():
                 # Test get_bucket_info
                 try:
                     print("\n➡️  Getting bucket information...")
-                    bucket_result = await session.call_tool(
-                        name="get_bucket_info",
-                        arguments={}
-                    )
+                    bucket_result = await session.call_tool(name="get_bucket_info", arguments={})
                     bucket_data = json.loads(bucket_result.content[0].text)
                     print(f"✅ S3 Bucket: {bucket_data['bucket_name']}")
                     print(f"   Supported formats: {len(bucket_data['supported_formats'])} types")
@@ -159,6 +139,7 @@ async def test_with_demo_document():
         print("2. Check that the demo document 'originals/email_1.txt' exists in S3")
         print("3. Verify AWS credentials and permissions")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     print("🚀 Tabulate MCP Server Demo Document Test")
