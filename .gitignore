@@ -79,5 +79,5 @@ package.json
 dyepack_scan/
 repomix-output.txt
 test_directs.py
-
+mcp_deploy/01-*
 config.yml
