@@ -4,8 +4,7 @@ Copyright © Amazon.com and Affiliates
 
 import json
 import time
-from typing import Any, Dict, Optional, Sequence, Union
-
+from typing import Any, Dict, Optional, Sequence, Union, List
 import boto3
 
 client = boto3.client("stepfunctions")
@@ -18,8 +17,8 @@ def run_idp_bedrock_api(
     parsing_mode: Optional[str] = "Amazon Textract",
     instructions: Optional[str] = "",
     few_shots: Optional[Sequence[Dict[str, Any]]] = [],
-    model_params: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    model_params: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     """
     Run IDP Bedrock to extract custom attributes and scores from the text(s)
 

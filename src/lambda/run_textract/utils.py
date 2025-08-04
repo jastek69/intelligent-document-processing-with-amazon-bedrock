@@ -5,13 +5,13 @@ Copyright © Amazon.com and Affiliates
 import logging
 import os
 import re
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, Any
 
-import pandas as pd
-import s3fs
-from textractor.data.markdown_linearization_config import MarkdownLinearizationConfig
-from textractor.data.text_linearization_config import TextLinearizationConfig
-from textractor.entities.document import Document
+import pandas as pd  # type: ignore
+import s3fs  # type: ignore
+from textractor.data.markdown_linearization_config import MarkdownLinearizationConfig  # type: ignore
+from textractor.data.text_linearization_config import TextLinearizationConfig  # type: ignore
+from textractor.entities.document import Document  # type: ignore
 
 config_kwargs = {
     "table_flatten_headers": os.environ["TABLE_FLATTEN_HEADERS"],
@@ -26,7 +26,7 @@ TEXT_CONFIG = TextLinearizationConfig(**config_kwargs)
 MARKDOWN_CONFIG = MarkdownLinearizationConfig(**config_kwargs)
 
 
-def clean_text_snippet(text: str, max_length: int = None) -> str:
+def clean_text_snippet(text: str, max_length: Optional[int] = None) -> str:
     """
     Clean a text snippet
 
@@ -59,8 +59,8 @@ def get_document_text(
     bucket_name: str,
     prefix: str,
     file_name: str,
-    max_length: int = None,
-) -> str:
+    max_length: Optional[int] = None,
+) -> Optional[str]:
     """
     Return document text
 
@@ -117,13 +117,13 @@ def compile_tables(document: Document, logger: logging.Logger) -> Dict:
     Dict
         dictionary of all tables present in the document
     """
-    all_tables = {}
+    all_tables: dict[str, Any] = {}
     kwargs = {
         "use_columns": True,
         "config": TEXT_CONFIG,
     }
 
-    last_valid_table_columns = []
+    last_valid_table_columns: list[str] = []
     last_title = ""
     for i, table in enumerate(document.tables):
         if bool(table.title):
@@ -195,6 +195,7 @@ def extract_content_by_pages(document: Document, logger: logging.Logger) -> Tupl
 
 
 def check_file_extension(filename: str) -> bool:
-    if filename.lower().endswith(".pdf", ".txt", ".png", ".jpg", ".tiff", ".jpeg", ".tif"):
+    allowed_extensions = (".pdf", ".txt", ".png", ".jpg", ".tiff", ".jpeg", ".tif")
+    if filename.lower().endswith(allowed_extensions):
         return True
     return False

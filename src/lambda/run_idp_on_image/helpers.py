@@ -3,6 +3,7 @@ Copyright © Amazon.com and Affiliates
 """
 
 from io import BytesIO
+from typing import Any, Union
 
 from pdf2image import convert_from_path
 import json
@@ -107,7 +108,7 @@ def combine_json_responses(responses: list) -> dict:
     return combined_json
 
 
-def create_human_message_with_imgs(text: str, file: str = None, max_pages: int = 20) -> dict:
+def create_human_message_with_imgs(text: str, file: Union[str, None] = None, max_pages: int = 20) -> dict[str, Any]:
     """
     Create a human message with embedded images for conversation API
 
@@ -119,7 +120,7 @@ def create_human_message_with_imgs(text: str, file: str = None, max_pages: int =
     Returns:
         dict: Message format with role "user" and content containing images and text
     """
-    content = []
+    content: list[dict[str, Any]] = []
     if file:
         if file.lower().endswith(".pdf"):
             bytes_strs = get_base64_encoded_images_from_pdf(file)
@@ -151,7 +152,9 @@ def create_human_message_with_imgs(text: str, file: str = None, max_pages: int =
     return {"role": "user", "content": content}
 
 
-def create_human_message_with_imgs_generator(text: str, file: str = None, max_pages: int = 20, start_page: int = 0):
+def create_human_message_with_imgs_generator(
+    text: str, file: Union[str, None] = None, max_pages: int = 20, start_page: int = 0
+):
     """
     Create a generator that yields human messages with chunked images and text.
 
@@ -190,7 +193,7 @@ def create_human_message_with_imgs_generator(text: str, file: str = None, max_pa
     # yield chunks of images
     for i in range(0, len(bytes_strs), max_pages):
         chunk = bytes_strs[i : i + max_pages]
-        content = []
+        content: list[dict[str, Any]] = []
 
         # add images for this chunk
         for bytes_str in chunk:

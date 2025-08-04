@@ -3,6 +3,7 @@ Copyright © Amazon.com and Affiliates
 """
 
 import json
+from typing import Any, Union
 
 import aws_cdk.aws_apigatewayv2 as _apigw
 import aws_cdk.aws_apigatewayv2_integrations as _integrations
@@ -50,9 +51,9 @@ class IDPBedrockAPIConstructs(Construct):
         self,
         scope: Construct,
         construct_id: str,
-        stack_name,
+        stack_name: str,
         s3_data_bucket: _s3.Bucket,
-        layers: Construct,
+        layers: Any,
         bedrock_region: str,
         textract_region: str,
         architecture: _lambda.Architecture,
@@ -66,7 +67,7 @@ class IDPBedrockAPIConstructs(Construct):
         hide_header_layout: bool = True,
         hide_page_num_layout: bool = True,
         use_table: bool = True,
-        s3_kms_key: kms.Key = None,
+        s3_kms_key: Union[kms.Key, None] = None,
         **kwargs,
     ) -> None:
         """
@@ -129,7 +130,7 @@ class IDPBedrockAPIConstructs(Construct):
         self.s3_kms_key = s3_kms_key
         self.documents_table_name = f"{stack_name}-documents"
         self.prefix = stack_name[:16]
-        self.nag_suppressed_resources = []
+        self.nag_suppressed_resources: list[str] = []
         self.user_pool = user_pool
         self.user_pool_client = user_pool_client
 
@@ -203,10 +204,13 @@ class IDPBedrockAPIConstructs(Construct):
         )
 
         self.create_service_access_log_group(api_id=http_api.api_id)
-        http_api.default_stage.node.default_child.access_log_settings = _apigw.CfnStage.AccessLogSettingsProperty(
-            destination_arn=self.log_group.log_group_arn,
-            format=json.dumps(HTTP_API_SERVICE_ACCESS_LOGS_FORMATTER),
-        )
+        if http_api.default_stage:
+            stage_cfn = http_api.default_stage.node.default_child
+            if stage_cfn and hasattr(stage_cfn, "access_log_settings"):
+                stage_cfn.access_log_settings = _apigw.CfnStage.AccessLogSettingsProperty(
+                    destination_arn=self.log_group.log_group_arn,
+                    format=json.dumps(HTTP_API_SERVICE_ACCESS_LOGS_FORMATTER),
+                )
 
         self.add_nag_suppressions()
 
@@ -412,7 +416,7 @@ class IDPBedrockAPIConstructs(Construct):
         )
 
     ## **************** IAM Permissions ****************
-    def create_roles(self: str):
+    def create_roles(self):
         ## ********* IAM Roles *********
         self.lambda_attributes_role = iam.Role(
             self,
@@ -590,7 +594,7 @@ class IDPBedrockAPIConstructs(Construct):
         # Added to suppressing list given we are limiting the bucket in resources
         self.nag_suppressed_resources.append(self.s3_read_write_files_policy)
 
-    def create_stepfunction_role(self: str):
+    def create_stepfunction_role(self):
         ## ********* IAM Roles *********
         self.stepfunctions_role = iam.Role(
             self,

@@ -20,8 +20,8 @@ HANDLER = logging.StreamHandler(sys.stdout)
 HANDLER.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
 LOGGER.addHandler(HANDLER)
 
-API_URI = os.environ.get("API_URI")
-STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN")
+API_URI = os.environ.get("API_URI", "")
+STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN", "")
 
 REQUEST_TIMEOUT = 900
 
@@ -109,6 +109,8 @@ def invoke_step_function(
 
     except Exception as e:
         raise Exception(f"Error in step function execution: {str(e)}")  # noqa: B904
+
+    return execution_arn
 
 
 async def get_file_name(file, prefix: str = "") -> str:

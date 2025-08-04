@@ -3,6 +3,7 @@ Copyright © Amazon.com and Affiliates
 """
 
 import boto3
+from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 import logging
 import time
@@ -11,6 +12,7 @@ import os
 from botocore.exceptions import ClientError
 import botocore
 import copy
+from typing import Any, Union
 
 LOGGER = logging.getLogger("CallBedrock")
 logging.basicConfig(level=logging.INFO)
@@ -44,7 +46,7 @@ def get_model_params() -> dict:
 
 
 def generate_conversation(
-    bedrock_client: boto3.client,
+    bedrock_client: BedrockRuntimeClient,
     model_id: str,
     system_prompts: list[dict],
     messages: list[dict],
@@ -75,7 +77,7 @@ def generate_conversation(
     inference_config["topP"] = top_p
 
     # Additional inference parameters to use
-    additional_model_fields = {}
+    additional_model_fields: dict[str, Any] = {}
     if "claude" in model_id:
         additional_model_fields["top_k"] = top_k
     if "claude-3-7-sonnet" in model_id and thinking_budget > 0:
@@ -155,7 +157,7 @@ def call_bedrock(
     model_id: str = "anthropic.claude-3-sonnet-20240229-v1:0",
     system_prompt: str = "Act as a useful assistant",
     profile_name: str = "",
-    bedrock_client: boto3.client = None,
+    bedrock_client: Union[BedrockRuntimeClient, None] = None,
     temperature: float = 0.0,
     top_k: int = 200,
     top_p: float = 1.0,

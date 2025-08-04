@@ -45,7 +45,7 @@ def clear_results() -> None:
             st.session_state[f"description_{i}"] = ""
 
 
-def show_attribute_fields(idx: int) -> None:
+def show_attribute_fields(idx: int) -> dict[str, str]:
     """
     Show input fields for entity description
     """
@@ -83,7 +83,7 @@ def show_attribute_fields(idx: int) -> None:
     }
 
 
-def fill_attribute_fields(idx: int) -> None:
+def fill_attribute_fields(idx: int) -> dict[str, str]:
     """
     Fill input fields for entity description
     """
@@ -114,7 +114,7 @@ def fill_attribute_fields(idx: int) -> None:
     }
 
 
-def show_few_shots_fields(idx: int) -> None:
+def show_few_shots_fields(idx: int) -> dict[str, str]:
     """
     Show input fields for few shots
     """
@@ -150,7 +150,7 @@ def show_few_shots_fields(idx: int) -> None:
     }
 
 
-def fill_few_shots_fields(idx: int) -> None:
+def fill_few_shots_fields(idx: int) -> dict[str, str]:
     """
     Fill input fields for few shots
     """

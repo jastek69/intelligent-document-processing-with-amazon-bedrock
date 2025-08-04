@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+from typing import Union
 
 import boto3
 import jwt
@@ -281,7 +282,7 @@ def login_successful(response: dict) -> None:
         LOGGER.info("User successfully logged in.")
 
 
-def associate_software_token(user: str, session: str) -> str:
+def associate_software_token(user: str, session: str) -> Union[str, None]:
     """
     Associate new MFA token to user during MFA setup
 
@@ -294,8 +295,8 @@ def associate_software_token(user: str, session: str) -> str:
 
     Returns
     -------
-    str
-        Session
+    str | None
+        Session or None if failed
     """
     try:
         response = client.associate_software_token(Session=session)
@@ -349,7 +350,7 @@ def sign_in(username: str, pwd: str) -> None:
             login_successful(response)
 
 
-def verify_token(token: str) -> bool:
+def verify_token(token: str) -> tuple[bool, str]:
     """
     Verify MFA token to complete MFA setup
 
@@ -384,7 +385,7 @@ def verify_token(token: str) -> bool:
     return success, message
 
 
-def setup_mfa() -> None:
+def setup_mfa() -> tuple[bool, str]:
     """
     Reply to MFA setup challenge
 
@@ -418,7 +419,7 @@ def setup_mfa() -> None:
     return success, message
 
 
-def sign_in_with_token(token: str) -> None:
+def sign_in_with_token(token: str) -> tuple[bool, str]:
     """
     Verify MFA token and complete login process
 
@@ -454,7 +455,7 @@ def sign_in_with_token(token: str) -> None:
     return success, message
 
 
-def reset_password(password: str) -> None:
+def reset_password(password: str) -> tuple[bool, str]:
     """
     Reset password on first connection, will store parameters of following challenge
 

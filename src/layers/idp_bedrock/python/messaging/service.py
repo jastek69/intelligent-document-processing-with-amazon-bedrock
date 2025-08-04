@@ -9,7 +9,7 @@ from messaging.publishers.base import BasePublisher
 
 class MessageDeliveryService:
     def __init__(self) -> None:
-        self._publishers = []
+        self._publishers: list[BasePublisher] = []
 
     def attach(self, publisher: BasePublisher) -> None:
         self._publishers.append(publisher)

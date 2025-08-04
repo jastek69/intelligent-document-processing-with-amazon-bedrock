@@ -4,6 +4,7 @@ Copyright © Amazon.com and Affiliates
 
 import os
 from pathlib import Path
+from typing import Union
 
 from aws_cdk import Aws, Duration, NestedStack, RemovalPolicy, Tags
 from aws_cdk import CfnOutput as output
@@ -85,8 +86,8 @@ class IDPBedrockECSStack(NestedStack):
         ecs_memory: int = 1024,
         ssm_client_id=None,
         ssm_cognito_domain=None,
-        ssm_user_pool_id: ssm.StringParameter = None,
-        ssm_region: ssm.StringParameter = None,
+        ssm_user_pool_id: Union[ssm.StringParameter, None] = None,
+        ssm_region: Union[ssm.StringParameter, None] = None,
         ssm_api_uri=None,
         ssm_bucket_name=None,
         ssm_cover_image_url=None,
@@ -94,7 +95,7 @@ class IDPBedrockECSStack(NestedStack):
         ssm_assistant_avatar_url=None,
         ssm_state_machine_arn=None,
         open_to_public_internet=False,
-        ip_address_allowed: list = None,
+        ip_address_allowed: Union[list[str], None] = None,
         # enable_waf: bool = True,
         **kwargs,
     ) -> None:
@@ -118,7 +119,7 @@ class IDPBedrockECSStack(NestedStack):
         self.ssm_state_machine_arn = ssm_state_machine_arn
         self.state_machine_name = state_machine_name
         self.ssm_cognito_domain = ssm_cognito_domain
-        self.nag_suppressed_resources = []
+        self.nag_suppressed_resources: list = []
         self.docker_asset = self.build_docker_push_ecr()
 
         # Name and value of the custom header to be used for authentication

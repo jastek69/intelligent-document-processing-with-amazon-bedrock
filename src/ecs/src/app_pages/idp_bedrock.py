@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import sys
+from typing import Any
 from typing import List
 
 from components.ssm import load_ssm_params
@@ -128,7 +129,7 @@ if not st.session_state["authenticated"]:
 #       CONSTANTS
 #########################
 
-BEDROCK_MODEL_IDS = json.loads(os.environ.get("BEDROCK_MODEL_IDS"))
+BEDROCK_MODEL_IDS = json.loads(os.environ.get("BEDROCK_MODEL_IDS", "[]"))
 MODEL_SPECS = get_model_names(BEDROCK_MODEL_IDS)
 
 RUN_EXTRACTION = False
@@ -159,42 +160,42 @@ def make_read_fn(content):
     return lambda self=None: content
 
 
-def process_response(parsed_response: list, wide=True) -> dict:
+def process_response(parsed_response: list, wide=True) -> dict[str, Any]:
     """
     Process JSON file returned by IDP Bedrock
     """
-    output_dict = {}
+    output_dict: dict[int, Any] = {}
 
-    for idx, dict in enumerate(parsed_response):
-        for key in dict:
-            if isinstance(dict[key], list):
-                dict[key] = str(dict[key])
-        output_dict[idx] = dict
+    for idx, item_dict in enumerate(parsed_response):
+        for key in item_dict:
+            if isinstance(item_dict[key], list):
+                item_dict[key] = str(item_dict[key])
+        output_dict[idx] = item_dict
 
     input_dict = output_dict.copy()
-    output_dict = {}
+    output_dict_final: dict[str, Any] = {}
 
     if wide:
         for key in input_dict:
-            output_dict[f"doc_{key + 1}"] = input_dict[key]
+            output_dict_final[f"doc_{key + 1}"] = input_dict[key]
 
     else:
         docs = [idx + 1 for idx in list(input_dict.keys())]
-        output_dict["_doc"] = docs
+        output_dict_final["_doc"] = docs
 
         attributes = set()
         for v in input_dict.values():
             attributes.update(v.keys())
 
         for attr in sorted(attributes):
-            output_dict[attr] = []
+            output_dict_final[attr] = []
 
         for doc_idx in docs:
             for attr in attributes:
                 value = input_dict[doc_idx - 1].get(attr)
-                output_dict[attr].append(value)
+                output_dict_final[attr].append(value)
 
-    return output_dict
+    return output_dict_final
 
 
 async def upload_file_async(doc, access_token: str, doc_idx: int) -> tuple[int, str]:
@@ -387,7 +388,7 @@ with tab_docs:
             if st.session_state["parsing_mode"] == "Amazon Bedrock LLM"
             else SUPPORTED_EXTENSIONS,
         )
-        st.session_state["docs"] = files[::-1]
+        st.session_state["docs"] = files[::-1] if files else []
     elif st.session_state["docs_input_type"] == "Enter texts manually":
         docs_placeholder = st.empty()
         col_add, col_remove, _ = st.columns([0.11, 0.12, 0.70])
@@ -568,13 +569,14 @@ if st.session_state["advanced_mode"]:
                         type=["pdf", "png", "jpg"],
                     )
                     file_keys_few_shots = []
-                    for doc_idx, doc in enumerate(few_shots_docs):
-                        with st.spinner(f"Uploading document {doc_idx + 1}/{len(few_shots_docs)}..."):
-                            file_key = api.invoke_file_upload(
-                                file=doc, prefix="few_shots", access_token=st.session_state["access_tkn"]
-                            )
-                            file_keys_few_shots.append(file_key)
-                            LOGGER.info(f"file key: {file_key}")
+                    if few_shots_docs:
+                        for doc_idx, doc in enumerate(few_shots_docs):
+                            with st.spinner(f"Uploading document {doc_idx + 1}/{len(few_shots_docs)}..."):
+                                file_key = api.invoke_file_upload(
+                                    file=doc, prefix="few_shots", access_token=st.session_state["access_tkn"]
+                                )
+                                file_keys_few_shots.append(file_key)
+                                LOGGER.info(f"file key: {file_key}")
                 with col2:
                     # upload json with markings
                     few_shots = st.file_uploader(
@@ -717,7 +719,7 @@ if st.session_state.get("raw_response"):
         st.markdown("#### 💡 Explanations")
         with st.expander(":mag: Show full results"):
             for idx, (response, raw_response) in enumerate(
-                zip(st.session_state["parsed_response"], st.session_state["raw_response"], strict=True)
+                zip(st.session_state["parsed_response"], st.session_state["raw_response"])  # noqa: B905
             ):
                 file_name = response.get("_file_name", "")
                 processed_name = file_name.rsplit(".", 1)[0] + ".txt"

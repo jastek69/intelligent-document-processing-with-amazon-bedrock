@@ -4,6 +4,7 @@ Copyright © Amazon.com and Affiliates
 
 import re
 from pathlib import Path
+from typing import Optional
 
 import boto3
 import s3fs
@@ -35,7 +36,7 @@ CONTENT_TYPES = {
 S3_CLIENT = boto3.client("s3", config=config)
 
 
-def clean_text_snippet(text: str, max_length: int = None) -> str:
+def clean_text_snippet(text: str, max_length: Optional[int] = None) -> str:
     """
     Clean a text snippet
 
@@ -68,8 +69,8 @@ def get_document_text(
     bucket_name: str,
     prefix: str,
     file_name: str,
-    max_length: int = None,
-) -> str:
+    max_length: Optional[int] = None,
+) -> Optional[str]:
     """
     Return document text
 
@@ -107,7 +108,7 @@ def get_document_text(
     )
 
 
-def upload_to_s3(s3_bucket, s3_key, local_path: str):
+def upload_to_s3(s3_bucket: str, s3_key: str, local_path: str) -> None:
     """
     Uploads a file from S3.
 
@@ -121,17 +122,16 @@ def upload_to_s3(s3_bucket, s3_key, local_path: str):
         Local path to the file
     """
     file_format = Path(s3_key).suffix[1:]
+    extra_args: Optional[dict[str, str]] = None
     if file_format in CONTENT_TYPES:
-        ExtraArgs = {
+        extra_args = {
             "ContentType": CONTENT_TYPES[file_format],
         }
-    else:
-        ExtraArgs = None
 
     # upload the file
     S3_CLIENT.upload_file(
         local_path,
         s3_bucket,
         s3_key,
-        ExtraArgs=ExtraArgs,
+        ExtraArgs=extra_args,
     )
