@@ -34,10 +34,15 @@ repos:
     rev: v1.17.0
     hooks:
       - id: mypy
-        args: [--explicit-package-bases]
-        additional_dependencies: [types-PyYAML==6.0.12.20250516, types-requests==2.32.4.20250611, types-retry==0.9.9.20250322]
-        stages: [ manual ]
-
+        args: [--explicit-package-bases, --ignore-missing-imports]
+        additional_dependencies: [
+          types-PyYAML,
+          types-requests,
+          types-retry,
+          boto3-stubs,
+          pandas-stubs,
+          types-qrcode
+        ]
 
   - repo: https://github.com/awslabs/automated-security-helper.git
     rev: v2.0.1
