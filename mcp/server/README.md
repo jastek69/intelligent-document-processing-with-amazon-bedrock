@@ -40,11 +40,17 @@ cd mcp/server
 # Run basic tests (recommended)
 python test_mcp_server.py
 
-# Run full test suite including document extraction
+# Run full test suite including document extraction and direct upload
 python test_mcp_server.py --full
+
+# Run with direct file upload test
+python test_mcp_server.py --with-upload
 
 # Run only document extraction test
 python test_mcp_server.py --extraction-only
+
+# Run only direct file upload test
+python test_mcp_server.py --upload-only
 ```
 
 ### Using Pytest
@@ -70,15 +76,18 @@ The server provides the following MCP tools:
 Extract structured attributes from documents using Amazon Bedrock LLMs.
 
 **Parameters:**
-- `documents`: List of document file keys in S3
+- `documents`: List of S3 document keys (e.g., `["originals/email_1.txt", "uploaded/document.pdf"]`)
 - `attributes`: List of attribute definitions to extract
 - `parsing_mode`: Processing mode (default: "Amazon Bedrock LLM")
 - `model_params`: LLM configuration (model_id, temperature, etc.)
 
+**Important Note:**
+This tool works with documents already stored in S3. Since the MCP server runs on AWS Bedrock AgentCore Runtime (in the cloud), it cannot access local files on your machine. For local file processing, use the `upload_and_extract_attributes` tool instead.
+
 **Example:**
 ```json
 {
-  "documents": ["originals/email_1.txt"],
+  "documents": ["originals/email_1.txt", "uploaded/customer_doc.pdf"],
   "attributes": [
     {"name": "sender_name", "description": "name of the person who sent the email"},
     {"name": "sentiment", "description": "overall sentiment of the email"}
@@ -91,21 +100,76 @@ Extract structured attributes from documents using Amazon Bedrock LLMs.
 }
 ```
 
-### 2. `get_extraction_status`
+### 2. `upload_and_extract_attributes`
+Upload files directly via HTTP and extract attributes in one step.
+
+**Parameters:**
+- `files`: List of file objects with base64 encoded content
+- `attributes`: List of attribute definitions to extract
+- `parsing_mode`: Processing mode (default: "Amazon Bedrock LLM")
+- `model_params`: LLM configuration (model_id, temperature, etc.)
+
+**Direct File Upload:**
+This tool accepts file content directly via HTTP streamable transport:
+- **Base64 encoding**: Files are encoded as base64 strings
+- **Automatic S3 upload**: Server handles S3 upload with unique naming
+- **Immediate processing**: Upload + extraction in one API call
+- **Multiple files**: Can process multiple files simultaneously
+
+**Example:**
+```json
+{
+  "files": [
+    {
+      "name": "customer_email.txt",
+      "content": "RGVhciBTaXIvTWFkYW0s...",
+      "mime_type": "text/plain"
+    }
+  ],
+  "attributes": [
+    {"name": "customer_name", "description": "name of the customer"},
+    {"name": "tracking_number", "description": "shipment tracking number"},
+    {"name": "urgency", "description": "urgency level: low, medium, high"}
+  ]
+}
+```
+
+**Response includes upload information:**
+```json
+{
+  "success": true,
+  "results": [...],
+  "upload_info": [
+    "Uploaded customer_email.txt → s3://bucket/uploaded/customer_email_abc123.txt"
+  ]
+}
+```
+
+### 3. `get_extraction_status`
 Check the status of a document extraction job.
 
 **Parameters:**
-- `job_id`: The extraction job identifier
+- `execution_arn`: The Step Functions execution ARN to check
 
-### 3. `list_supported_models`
+### 4. `list_supported_models`
 Get a list of available Amazon Bedrock models for document processing.
 
 **Parameters:** None
 
-### 4. `get_bucket_info`
+**Returns:**
+- List of supported model IDs
+- Default model information
+- Model recommendations for speed vs quality
+
+### 5. `get_bucket_info`
 Get information about the S3 bucket used for document storage.
 
 **Parameters:** None
+
+**Returns:**
+- S3 bucket name
+- Supported file formats
+- Usage instructions
 
 ## Architecture
 
@@ -133,21 +197,45 @@ mcp/server/
 ├── mcp_server.py               # Main MCP server implementation
 ├── utils.py                    # Utility functions
 ├── deploy_idp_bedrock_mcp.py   # Deployment script
+├── update_cline_token.sh       # Update Cline MCP bearer token (shell script)
 └── tests/                      # Additional test files
     ├── test_simple.py          # Basic connectivity tests
     ├── test_direct_http.py     # Direct HTTP tests
     └── test_helpers.py         # Test utilities
 ```
 
-### Testing Strategy
+### Updating Bearer Token
 
-1. **Basic Tests**: Configuration, connectivity, protocol compliance
-2. **Integration Tests**: Tools listing, AWS integration
-3. **End-to-End Tests**: Document extraction with real documents
+Bearer tokens expire periodically and need to be refreshed. Use the provided scripts to automatically update your Cline MCP configuration:
 
-### Rate Limiting
+**Option A: Shell Script (Recommended)**
+```bash
+# Update bearer token automatically
+./update_cline_token.sh
 
-The server implements rate limiting to prevent abuse. Tests include retry logic with exponential backoff to handle rate limits gracefully.
+# Test what would be updated (dry run)
+./update_cline_token.sh --dry-run
+
+# Use custom Cline config path
+./update_cline_token.sh --config-path /path/to/cline_mcp_settings.json
+
+# Show help
+./update_cline_token.sh --help
+```
+**The script will:**
+- ✅ Fetch the latest bearer token from AWS Secrets Manager
+- ✅ Automatically locate your Cline MCP settings file
+- ✅ Update the `tabulate-bedrock` server configuration
+- ✅ Create a backup of your config before changes
+- ✅ Preserve all other settings unchanged
+
+**Requirements:**
+- **Shell script**: `jq` and `aws` CLI tools
+- **Python script**: `boto3` Python library
+
+**Note:** You may need to restart Cline for the token changes to take effect.
+
+
 
 ## Troubleshooting
 
@@ -167,12 +255,6 @@ The server implements rate limiting to prevent abuse. Tests include retry logic 
    - Verify documents exist in the S3 bucket
    - Check document format compatibility
    - Review Bedrock model availability in your region
-
-### Getting Help
-
-- Check the test output for detailed error messages
-- Review AWS CloudWatch logs for the Bedrock AgentCore Runtime
-- Verify AWS service quotas and limits
 
 ## License
 
