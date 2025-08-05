@@ -31,7 +31,9 @@ def mcp_config():
 
         # Construct MCP URL
         encoded_arn = agent_arn.replace(":", "%3A").replace("/", "%2F")
-        mcp_url = f"https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
+        mcp_url = (
+            f"https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
+        )
 
         headers = {
             "authorization": f"Bearer {bearer_token}",
@@ -89,7 +91,7 @@ def test_mcp_initialization(mcp_config):
             print("   ✅ Received SSE response (correct MCP format)")
             json_data = parse_sse_response(response.text)
             assert json_data is not None, "Could not parse SSE data"
-            
+
             print("   ✅ MCP initialization successful!")
             server_info = json_data.get("result", {}).get("serverInfo", {})
             print(f"   Server: {server_info.get('name', 'IDP Bedrock MCP Server')}")
@@ -99,7 +101,7 @@ def test_mcp_initialization(mcp_config):
             result = response.json()
             print("   ✅ MCP initialization successful!")
             print(f"   Server: {result.get('result', {}).get('serverInfo', {}).get('name', 'Unknown')}")
-        
+
         return response
 
     try:
@@ -116,7 +118,7 @@ def test_list_tools(mcp_config):
     def make_request():
         # Add a small delay between tests to avoid rate limiting
         sync_rate_limited_sleep(1.0, 3.0)
-        
+
         response = requests.post(mcp_config["mcp_url"], headers=mcp_config["headers"], json=tools_request, timeout=30)
         print(f"   Status: {response.status_code}")
 
@@ -136,16 +138,21 @@ def test_list_tools(mcp_config):
         print(f"   ✅ Found {len(tools)} MCP tools:")
         for tool in tools:
             print(f"      🔧 {tool['name']}")
-        
+
         assert len(tools) > 0, "Should have at least one tool"
-        
+
         # Check for expected tools
         tool_names = [tool["name"] for tool in tools]
-        expected_tools = ["extract_document_attributes", "get_extraction_status", "list_supported_models", "get_bucket_info"]
-        
+        expected_tools = [
+            "extract_document_attributes",
+            "get_extraction_status",
+            "list_supported_models",
+            "get_bucket_info",
+        ]
+
         for expected_tool in expected_tools:
             assert expected_tool in tool_names, f"Should have {expected_tool} tool"
-        
+
         return response
 
     try:
@@ -179,7 +186,9 @@ def test_document_extraction(mcp_config):
 
     try:
         print("   🚀 Calling MCP tool (this may take 30-60 seconds)...")
-        response = requests.post(mcp_config["mcp_url"], headers=mcp_config["headers"], json=extract_request, timeout=180)
+        response = requests.post(
+            mcp_config["mcp_url"], headers=mcp_config["headers"], json=extract_request, timeout=180
+        )
         print(f"   Status: {response.status_code}")
 
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -235,7 +244,7 @@ def test_mcp_via_http(mcp_config):
     print("This proves your MCP server IS working!")
     print()
 
-    print(f"\n🌐 Testing MCP server via direct HTTP...")
+    print("\n🌐 Testing MCP server via direct HTTP...")
     print(f"URL: {mcp_config['mcp_url']}")
 
     # This test just verifies the configuration is working

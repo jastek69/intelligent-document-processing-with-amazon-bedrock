@@ -25,16 +25,15 @@ from utils import (
 def load_config_yml():
     """Load and parse the config.yml file from the project root"""
     config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.yml")
-    
+
     if not os.path.exists(config_path):
         print(f"❌ Config file not found at: {config_path}")
         print("Make sure you have a config.yml file in the project root")
         return None
-    
+
     try:
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        return config
+        with open(config_path, "r") as f:
+            return yaml.safe_load(f)
     except Exception as e:
         print(f"❌ Error loading config.yml: {e}")
         return None
@@ -45,16 +44,16 @@ def get_username_from_config(config, custom_username=None):
     if custom_username:
         print(f"Using custom username: {custom_username}")
         return custom_username
-    
+
     if not config:
         return None
-    
+
     try:
-        users = config.get('authentication', {}).get('users', [])
+        users = config.get("authentication", {}).get("users", [])
         if not users:
             print("❌ No users found in config.yml authentication section")
             return None
-        
+
         username = users[0]  # Use the first user
         print(f"Using username from config.yml: {username}")
         return username
@@ -312,8 +311,10 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
 def main():
     """Main deployment function - updated to match fixed notebook approach"""
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Deploy IDP with Amazon Bedrock MCP Server')
-    parser.add_argument('--username', '-u', type=str, help='Custom username for Cognito authentication (overrides config.yml)')
+    parser = argparse.ArgumentParser(description="Deploy IDP with Amazon Bedrock MCP Server")
+    parser.add_argument(
+        "--username", "-u", type=str, help="Custom username for Cognito authentication (overrides config.yml)"
+    )
     args = parser.parse_args()
 
     print("🚀 IDP with Amazon Bedrock MCP Server Deployment")
@@ -327,13 +328,13 @@ def main():
         print("📋 Loading configuration...")
         config = load_config_yml()
         username = get_username_from_config(config, args.username)
-        
+
         if not username:
             print("❌ Could not determine username. Please:")
             print("   1. Ensure config.yml exists with authentication.users section")
             print("   2. Or provide username with --username parameter")
             sys.exit(1)
-        
+
         # Get AWS region
         boto_session = Session()
         region = boto_session.region_name

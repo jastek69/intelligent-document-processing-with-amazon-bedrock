@@ -1,271 +1,179 @@
 # IDP with Amazon Bedrock MCP Server
 
-This directory contains the implementation and deployment scripts for the IDP with Amazon Bedrock MCP Server, which exposes the document attribute extraction functionality as MCP (Model Context Protocol) tools.
+This directory contains the Model Context Protocol (MCP) server implementation for the IDP (Intelligent Document Processing) with Amazon Bedrock project.
 
 ## Overview
 
-The IDP with Amazon Bedrock MCP Server transforms the existing IDP project into an MCP-compatible service that can be used by any MCP client or AI agent. It provides a standardized interface for document attribute extraction while leveraging the existing AWS infrastructure.
+The MCP server provides a standardized interface for document processing capabilities, allowing AI assistants and other clients to interact with the IDP system through the Model Context Protocol.
 
-## Key Features
+## Features
 
-- **🔄 Reuses Existing Infrastructure**: Leverages deployed Step Functions, S3 bucket, and Cognito user pool
-- **🛡️ Secure Authentication**: Integrates with existing Cognito authentication
-- **📋 MCP-Compliant**: Provides standardized MCP tools for document processing
-- **☁️ Fully Managed**: Hosted on Amazon Bedrock AgentCore Runtime with automatic scaling
-- **🧪 Testing Support**: Includes comprehensive test suite with pytest
+- **Document Attribute Extraction**: Extract structured attributes from various document types
+- **Multi-format Support**: Process PDFs, images, text files, and office documents
+- **Amazon Bedrock Integration**: Leverage powerful LLMs for intelligent document analysis
+- **S3 Integration**: Seamless document storage and retrieval
+- **Status Tracking**: Monitor extraction job progress and results
 
-## MCP Tools Provided
+## Quick Start
+
+### Deploying the MCP Server
+
+Before testing, you need to deploy the MCP server:
+
+**Option A: Using the deployment script:**
+```bash
+python deploy_idp_bedrock_mcp.py
+```
+
+**Option B: Using the deployment notebook:**
+```bash
+jupyter notebook deploy_idp_bedrock_mcp.ipynb
+```
+
+### Testing the MCP Server
+
+After deployment, test the MCP server using the comprehensive test suite:
+
+```bash
+cd mcp/server
+
+# Run basic tests (recommended)
+python test_mcp_server.py
+
+# Run full test suite including document extraction
+python test_mcp_server.py --full
+
+# Run only document extraction test
+python test_mcp_server.py --extraction-only
+```
+
+### Using Pytest
+
+For development and CI/CD integration:
+
+```bash
+cd mcp/server
+
+# Run all working tests
+python -m pytest tests/ -v
+
+# Run specific test files
+python -m pytest tests/test_simple.py -v
+python -m pytest tests/test_direct_http.py -v
+```
+
+## MCP Tools Available
+
+The server provides the following MCP tools:
 
 ### 1. `extract_document_attributes`
-Main tool for document attribute extraction from various document types.
+Extract structured attributes from documents using Amazon Bedrock LLMs.
 
 **Parameters:**
-- `documents`: List of document paths/keys in S3
+- `documents`: List of document file keys in S3
 - `attributes`: List of attribute definitions to extract
-- `parsing_mode`: "Amazon Textract", "Amazon Bedrock LLM", or "Bedrock Data Automation"
-- `instructions`: Optional high-level instructions
-- `few_shots`: Optional example input/output pairs
-- `model_params`: Model configuration (model_id, temperature, etc.)
+- `parsing_mode`: Processing mode (default: "Amazon Bedrock LLM")
+- `model_params`: LLM configuration (model_id, temperature, etc.)
 
 **Example:**
-```python
+```json
 {
-    "documents": ["originals/email_1.txt"],
-    "attributes": [
-        {"name": "customer_name", "description": "name of the customer who wrote the email"},
-        {"name": "sentiment", "description": "sentiment score between 0 and 1"}
-    ]
+  "documents": ["originals/email_1.txt"],
+  "attributes": [
+    {"name": "sender_name", "description": "name of the person who sent the email"},
+    {"name": "sentiment", "description": "overall sentiment of the email"}
+  ],
+  "parsing_mode": "Amazon Bedrock LLM",
+  "model_params": {
+    "model_id": "us.anthropic.claude-3-haiku-20240307-v1:0",
+    "temperature": 0.1
+  }
 }
 ```
 
 ### 2. `get_extraction_status`
-Check the status of long-running extraction operations.
+Check the status of a document extraction job.
 
 **Parameters:**
-- `execution_arn`: The ARN of the Step Functions execution to check
+- `job_id`: The extraction job identifier
 
 ### 3. `list_supported_models`
-Get the list of supported Amazon Bedrock models.
+Get a list of available Amazon Bedrock models for document processing.
 
-**Returns:**
-- List of available model IDs
-- Default model information
-- Model recommendations
+**Parameters:** None
 
 ### 4. `get_bucket_info`
-Information about the S3 bucket and supported document formats.
+Get information about the S3 bucket used for document storage.
 
-**Returns:**
-- Bucket name
-- Supported file formats
-- Usage instructions
+**Parameters:** None
 
-## Files Structure
+## Architecture
 
-```
-mcp/server/
-├── README.md                      # This file
-├── mcp_server.py                  # Main MCP server implementation
-├── requirements.txt               # Python dependencies
-├── utils.py                       # Utility functions for deployment
-├── deploy_idp_bedrock_mcp.ipynb      # Main deployment notebook
-├── deploy_idp_bedrock_mcp.py         # Deployment script
-├── example_usage.py               # Usage examples
-├── tests/                         # Test suite
-│   ├── __init__.py
-│   ├── pytest.ini                # Pytest configuration
-│   ├── test_direct_http.py        # Direct HTTP API tests
-│   ├── test_client_remote.py      # Remote client tests
-│   ├── test_with_demo_document.py # Document processing tests
-│   └── test_*.py                  # Additional test files
-└── config files...                # Various configuration files
-```
+The MCP server is deployed as an AWS Bedrock AgentCore Runtime, providing:
 
-## Prerequisites
-
-Before deploying the IDP with Amazon Bedrock MCP Server, ensure you have:
-
-1. **IDP Project Deployed**: The main IDP project must be deployed with:
-   - Step Functions state machine
-   - S3 bucket for document storage
-   - Cognito user pool for authentication
-   - All Lambda functions operational
-
-2. **AWS Credentials**: Properly configured AWS credentials with permissions for:
-   - Amazon Bedrock AgentCore
-   - IAM role creation
-   - Systems Manager Parameter Store
-   - AWS Secrets Manager
-   - Amazon ECR
-
-3. **Development Environment**:
-   - Python 3.10+
-   - Docker running
-   - Jupyter notebook environment
-
-## Deployment
-
-### Step 1: Navigate to Directory
-```bash
-cd mcp/server/
-```
-
-### Step 2: Run Deployment Notebook
-Open and run the deployment notebook:
-```bash
-jupyter notebook deploy_tabulate_mcp.ipynb
-```
-
-The notebook will guide you through:
-1. Installing dependencies
-2. Verifying existing infrastructure
-3. Using existing Cognito user (parsed from config.yml)
-4. Setting up IAM roles
-5. Configuring AgentCore Runtime
-6. Deploying the MCP server
-7. Testing the deployment
-
-**Note**: The deployment will automatically parse the username from your `config.yml` file. You can also specify a custom username as a parameter during deployment.
-
-### Step 3: Test the Deployment
-After deployment, run the test suite:
-```bash
-cd tests
-pytest
-```
-
-Or test using the generated remote client:
-```bash
-python tests/test_client_remote.py
-```
-
-## Local Development and Testing
-
-### Run MCP Server Locally
-```bash
-# Set environment variables
-export STATE_MACHINE_ARN="arn:aws:states:us-east-1:081277383238:stateMachine:idp-bedrock-StepFunctions"
-export BUCKET_NAME="idp-bedrock-data-081277383238"
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the server
-python mcp_server.py
-```
-
-### Run Tests
-```bash
-# Run all tests
-cd tests
-pytest
-
-# Run specific test file
-pytest test_direct_http.py
-
-# Run with verbose output
-pytest -v
-```
+- **Scalable Processing**: Automatic scaling based on demand
+- **Secure Access**: AWS IAM-based authentication and authorization
+- **High Availability**: Multi-AZ deployment with automatic failover
+- **Cost Optimization**: Pay-per-use pricing model
 
 ## Configuration
 
-The MCP server uses the following configuration sources:
+The server configuration is managed through AWS Systems Manager Parameter Store and AWS Secrets Manager:
 
-### Environment Variables
-- `STATE_MACHINE_ARN`: ARN of the IDP Step Functions state machine
-- `BUCKET_NAME`: Name of the S3 bucket for document storage
-- `AWS_DEFAULT_REGION`: AWS region
+- **Agent ARN**: `/idp-bedrock-mcp/runtime/agent_arn`
+- **Credentials**: `idp-bedrock-mcp/cognito/credentials`
 
-### AWS Services Integration
-- **Parameter Store**: `/idp-mcp/runtime/agent_arn` - Stores the deployed agent ARN
-- **Secrets Manager**: `idp-mcp/cognito/credentials` - Stores authentication credentials
-- **Cognito**: Uses existing user pool from IDP project
+## Development
 
-## Usage Examples
+### Project Structure
 
-### Basic Document Extraction
-```python
-# Using MCP client
-result = await session.call_tool(
-    name="extract_document_attributes",
-    arguments={
-        "documents": ["originals/email_1.txt"],
-        "attributes": [
-            {"name": "customer_name", "description": "name of the customer"},
-            {"name": "sentiment", "description": "sentiment score 0-1"}
-        ]
-    }
-)
+```
+mcp/server/
+├── test_mcp_server.py           # Comprehensive test suite
+├── mcp_server.py               # Main MCP server implementation
+├── utils.py                    # Utility functions
+├── deploy_idp_bedrock_mcp.py   # Deployment script
+└── tests/                      # Additional test files
+    ├── test_simple.py          # Basic connectivity tests
+    ├── test_direct_http.py     # Direct HTTP tests
+    └── test_helpers.py         # Test utilities
 ```
 
-### Advanced Extraction with Custom Model
-```python
-result = await session.call_tool(
-    name="extract_document_attributes",
-    arguments={
-        "documents": ["originals/financial_doc.pdf"],
-        "attributes": [
-            {"name": "total_amount", "description": "total financial amount"},
-            {"name": "currency", "description": "currency code"}
-        ],
-        "parsing_mode": "Amazon Bedrock LLM",
-        "model_params": {
-            "model_id": "us.anthropic.claude-3-7-sonnet-20250219-v1:0",
-            "temperature": 0.1
-        },
-        "instructions": "Focus on numerical values and currency symbols"
-    }
-)
-```
+### Testing Strategy
 
-## Monitoring and Troubleshooting
+1. **Basic Tests**: Configuration, connectivity, protocol compliance
+2. **Integration Tests**: Tools listing, AWS integration
+3. **End-to-End Tests**: Document extraction with real documents
 
-### CloudWatch Logs
-Monitor the MCP server through CloudWatch logs:
-- Log Group: `/aws/bedrock-agentcore/runtimes/idp-mcp-*`
+### Rate Limiting
+
+The server implements rate limiting to prevent abuse. Tests include retry logic with exponential backoff to handle rate limits gracefully.
+
+## Troubleshooting
 
 ### Common Issues
 
-1. **Authentication Errors**: Verify Cognito user pool configuration and bearer token
-2. **Step Functions Failures**: Check Step Functions execution logs
-3. **S3 Access Issues**: Verify bucket permissions and document paths
-4. **Model Access**: Ensure Bedrock model access is enabled in your region
+1. **Rate Limiting (429 errors)**
+   - Wait between requests
+   - Use the built-in retry logic in tests
+   - Consider reducing test frequency
 
-### Health Check
-The MCP server provides a health check endpoint:
-```
-GET /health
-```
+2. **Authentication Errors**
+   - Verify AWS credentials are configured
+   - Check IAM permissions for Bedrock and S3 access
+   - Ensure Secrets Manager access is available
 
-## Security Considerations
+3. **Document Processing Failures**
+   - Verify documents exist in the S3 bucket
+   - Check document format compatibility
+   - Review Bedrock model availability in your region
 
-- **Authentication**: Uses JWT tokens from Cognito user pool
-- **Authorization**: IAM roles with least-privilege access
-- **Network**: Deployed on AWS managed infrastructure
-- **Data**: Documents processed in your AWS account, no data leaves your environment
+### Getting Help
 
-## Cleanup
-
-To remove the deployed MCP server:
-
-1. Run the cleanup section in the deployment notebook, or
-2. Manually delete:
-   - AgentCore Runtime instance
-   - ECR repository
-   - IAM roles
-   - Parameter Store parameters
-   - Secrets Manager secrets
-
-Note: The original IDP infrastructure (Step Functions, S3, Cognito) remains unchanged.
-
-## Support
-
-For issues or questions:
-1. Check CloudWatch logs for error details
-2. Verify all prerequisites are met
-3. Ensure AWS credentials have required permissions
-4. Run the test suite to identify issues
+- Check the test output for detailed error messages
+- Review AWS CloudWatch logs for the Bedrock AgentCore Runtime
+- Verify AWS service quotas and limits
 
 ## License
 
-This project follows the same license as the main IDP project.
+This project is licensed under the MIT License - see the LICENSE file for details.
