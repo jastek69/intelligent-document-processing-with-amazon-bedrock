@@ -1,6 +1,6 @@
 """
-Utility functions for Tabulate MCP Server deployment
-Integrates with existing Cognito user pool from the tabulate project
+Utility functions for IDP with Amazon Bedrock MCP Server deployment
+Integrates with existing Cognito user pool from the IDP project
 """
 
 import boto3
@@ -11,7 +11,7 @@ from boto3.session import Session
 
 def get_existing_cognito_config():
     """
-    Retrieve existing Cognito configuration from the tabulate project
+    Retrieve existing Cognito configuration from the IDP project
     """
     boto_session = Session()
     region = boto_session.region_name
@@ -19,7 +19,7 @@ def get_existing_cognito_config():
 
     try:
         # Get existing Cognito configuration from SSM parameters
-        # These are created by the tabulate project's Cognito construct
+        # These are created by the IDP project's Cognito construct
         stack_name = "idp-bedrock"  # From config.yml
 
         # Get Client ID
@@ -55,7 +55,7 @@ def get_existing_cognito_config():
 
     except Exception as e:
         print(f"❌ Error retrieving existing Cognito configuration: {e}")
-        print("Make sure the tabulate project is deployed with Cognito enabled")
+        print("Make sure the IDP project is deployed with Cognito enabled")
         return None
 
 
@@ -115,7 +115,7 @@ def try_expected_s3_bucket(region, account_id):
 
 
 def get_existing_infrastructure_config():
-    """Get existing tabulate infrastructure configuration by discovering resources"""
+    """Get existing IDP infrastructure configuration by discovering resources"""
     try:
         boto_session = Session()
         region = boto_session.region_name
@@ -134,7 +134,7 @@ def get_existing_infrastructure_config():
         # Validate that we found both resources
         if not state_machine_arn or not bucket_name:
             print("❌ Could not find required infrastructure resources")
-            print("Please ensure the tabulate project is deployed with:")
+            print("Please ensure the IDP project is deployed with:")
             print("  - Step Functions state machine (containing 'idp-bedrock')")
             print("  - S3 bucket (containing 'idp-bedrock-data')")
             return None
@@ -269,9 +269,9 @@ def create_mcp_user_in_existing_pool(cognito_config, username="egorkr@amazon.co.
     return get_existing_user_credentials(cognito_config, username, password)
 
 
-def create_agentcore_role(agent_name="tabulate-mcp"):
+def create_agentcore_role(agent_name="idp-bedrock-mcp"):
     """
-    Create IAM role for AgentCore Runtime with permissions for tabulate resources
+    Create IAM role for AgentCore Runtime with permissions for IDP resources
     """
     iam_client = boto3.client("iam")
     agentcore_role_name = f"agentcore-{agent_name}-role"
@@ -360,6 +360,7 @@ def create_agentcore_role(agent_name="tabulate-mcp"):
                 ],
                 "Resource": [
                     f"arn:aws:bedrock-agentcore:{region}:{account_id}:workload-identity-directory/default",
+                    f"arn:aws:bedrock-agentcore:{region}:{account_id}:workload-identity-directory/default/workload-identity/*",
                     f"arn:aws:bedrock-agentcore:{region}:{account_id}:workload-identity-directory/default/workload-identity/{agent_name}-*",
                 ],
             },
@@ -412,7 +413,7 @@ def create_agentcore_role(agent_name="tabulate-mcp"):
     # Attach policy
     try:
         iam_client.put_role_policy(
-            PolicyDocument=role_policy_document, PolicyName="TabulateAgentCorePolicy", RoleName=agentcore_role_name
+            PolicyDocument=role_policy_document, PolicyName="IDPBedrockAgentCorePolicy", RoleName=agentcore_role_name
         )
         print(f"✅ Attached policy to role: {agentcore_role_name}")
     except Exception as e:
@@ -434,10 +435,10 @@ def store_mcp_configuration(agent_arn, cognito_config, mcp_user_config):
     try:
         # Store agent ARN in Parameter Store
         ssm_client.put_parameter(
-            Name="/tabulate-mcp/runtime/agent_arn",
+            Name="/idp-bedrock-mcp/runtime/agent_arn",
             Value=agent_arn,
             Type="String",
-            Description="Agent ARN for Tabulate MCP server",
+            Description="Agent ARN for IDP with Amazon Bedrock MCP server",
             Overwrite=True,
         )
         print("✅ Agent ARN stored in Parameter Store")
@@ -452,14 +453,14 @@ def store_mcp_configuration(agent_arn, cognito_config, mcp_user_config):
 
         try:
             secrets_client.create_secret(
-                Name="tabulate-mcp/cognito/credentials",
-                Description="Cognito credentials for Tabulate MCP server",
+                Name="idp-bedrock-mcp/cognito/credentials",
+                Description="Cognito credentials for IDP with Amazon Bedrock MCP server",
                 SecretString=json.dumps(mcp_credentials),
             )
             print("✅ MCP credentials stored in Secrets Manager")
         except secrets_client.exceptions.ResourceExistsException:
             secrets_client.update_secret(
-                SecretId="tabulate-mcp/cognito/credentials", SecretString=json.dumps(mcp_credentials)
+                SecretId="idp-bedrock-mcp/cognito/credentials", SecretString=json.dumps(mcp_credentials)
             )
             print("✅ MCP credentials updated in Secrets Manager")
 

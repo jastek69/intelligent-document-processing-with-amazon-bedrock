@@ -1,32 +1,10 @@
-# Tabulate MCP Server
+# IDP with Amazon Bedrock MCP Server
 
-This directory contains the implementation and deployment scripts for the Tabulate MCP Server, which exposes the tabulate document attribute extraction functionality as MCP (Model Context Protocol) tools.
+This directory contains the implementation and deployment scripts for the IDP with Amazon Bedrock MCP Server, which exposes the document attribute extraction functionality as MCP (Model Context Protocol) tools.
 
 ## Overview
 
-The Tabulate MCP Server transforms the existing tabulate project into an MCP-compatible service that can be used by any MCP client or AI agent. It provides a standardized interface for document attribute extraction while leveraging the existing AWS infrastructure.
-
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │───▶│  AgentCore       │───▶│  Tabulate MCP   │
-│  (Claude, etc.) │    │  Runtime         │    │     Server      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-                                                         ▼
-                       ┌─────────────────────────────────────────┐
-                       │        Existing Infrastructure          │
-                       │  ┌─────────────┐  ┌─────────────────┐   │
-                       │  │    Step     │  │      Amazon     │   │
-                       │  │  Functions  │  │     Bedrock     │   │
-                       │  └─────────────┘  └─────────────────┘   │
-                       │  ┌─────────────┐  ┌─────────────────┐   │
-                       │  │     S3      │  │     Cognito     │   │
-                       │  │   Bucket    │  │   User Pool     │   │
-                       │  └─────────────┘  └─────────────────┘   │
-                       └─────────────────────────────────────────┘
-```
+The IDP with Amazon Bedrock MCP Server transforms the existing IDP project into an MCP-compatible service that can be used by any MCP client or AI agent. It provides a standardized interface for document attribute extraction while leveraging the existing AWS infrastructure.
 
 ## Key Features
 
@@ -34,7 +12,7 @@ The Tabulate MCP Server transforms the existing tabulate project into an MCP-com
 - **🛡️ Secure Authentication**: Integrates with existing Cognito authentication
 - **📋 MCP-Compliant**: Provides standardized MCP tools for document processing
 - **☁️ Fully Managed**: Hosted on Amazon Bedrock AgentCore Runtime with automatic scaling
-- **🧪 Testing Support**: Includes local and remote testing clients
+- **🧪 Testing Support**: Includes comprehensive test suite with pytest
 
 ## MCP Tools Provided
 
@@ -85,21 +63,29 @@ Information about the S3 bucket and supported document formats.
 ## Files Structure
 
 ```
-mcp_deploy/tabulate_mcp_server/
+mcp/server/
 ├── README.md                      # This file
 ├── mcp_server.py                  # Main MCP server implementation
 ├── requirements.txt               # Python dependencies
 ├── utils.py                       # Utility functions for deployment
-├── deploy_tabulate_mcp.ipynb      # Main deployment notebook
-├── test_client_local.py           # Local testing client
-└── test_client_remote.py          # Remote testing client (generated)
+├── deploy_idp_bedrock_mcp.ipynb      # Main deployment notebook
+├── deploy_idp_bedrock_mcp.py         # Deployment script
+├── example_usage.py               # Usage examples
+├── tests/                         # Test suite
+│   ├── __init__.py
+│   ├── pytest.ini                # Pytest configuration
+│   ├── test_direct_http.py        # Direct HTTP API tests
+│   ├── test_client_remote.py      # Remote client tests
+│   ├── test_with_demo_document.py # Document processing tests
+│   └── test_*.py                  # Additional test files
+└── config files...                # Various configuration files
 ```
 
 ## Prerequisites
 
-Before deploying the Tabulate MCP Server, ensure you have:
+Before deploying the IDP with Amazon Bedrock MCP Server, ensure you have:
 
-1. **Tabulate Project Deployed**: The main tabulate project must be deployed with:
+1. **IDP Project Deployed**: The main IDP project must be deployed with:
    - Step Functions state machine
    - S3 bucket for document storage
    - Cognito user pool for authentication
@@ -121,7 +107,7 @@ Before deploying the Tabulate MCP Server, ensure you have:
 
 ### Step 1: Navigate to Directory
 ```bash
-cd mcp_deploy/tabulate_mcp_server/
+cd mcp/server/
 ```
 
 ### Step 2: Run Deployment Notebook
@@ -133,18 +119,24 @@ jupyter notebook deploy_tabulate_mcp.ipynb
 The notebook will guide you through:
 1. Installing dependencies
 2. Verifying existing infrastructure
-3. Using existing Cognito user (you'll be prompted for password)
+3. Using existing Cognito user (parsed from config.yml)
 4. Setting up IAM roles
 5. Configuring AgentCore Runtime
 6. Deploying the MCP server
 7. Testing the deployment
 
-**Note**: The deployment will use the existing user from your `config.yml` file (e.g., `egorkr@amazon.co.uk`). You'll be prompted to enter the password for this user during deployment.
+**Note**: The deployment will automatically parse the username from your `config.yml` file. You can also specify a custom username as a parameter during deployment.
 
 ### Step 3: Test the Deployment
-After deployment, test using the generated remote client:
+After deployment, run the test suite:
 ```bash
-python test_client_remote.py
+cd tests
+pytest
+```
+
+Or test using the generated remote client:
+```bash
+python tests/test_client_remote.py
 ```
 
 ## Local Development and Testing
@@ -162,9 +154,17 @@ pip install -r requirements.txt
 python mcp_server.py
 ```
 
-### Test Local Server
+### Run Tests
 ```bash
-python test_client_local.py
+# Run all tests
+cd tests
+pytest
+
+# Run specific test file
+pytest test_direct_http.py
+
+# Run with verbose output
+pytest -v
 ```
 
 ## Configuration
@@ -172,14 +172,14 @@ python test_client_local.py
 The MCP server uses the following configuration sources:
 
 ### Environment Variables
-- `STATE_MACHINE_ARN`: ARN of the tabulate Step Functions state machine
+- `STATE_MACHINE_ARN`: ARN of the IDP Step Functions state machine
 - `BUCKET_NAME`: Name of the S3 bucket for document storage
 - `AWS_DEFAULT_REGION`: AWS region
 
 ### AWS Services Integration
-- **Parameter Store**: `/tabulate-mcp/runtime/agent_arn` - Stores the deployed agent ARN
-- **Secrets Manager**: `tabulate-mcp/cognito/credentials` - Stores authentication credentials
-- **Cognito**: Uses existing user pool from tabulate project
+- **Parameter Store**: `/idp-mcp/runtime/agent_arn` - Stores the deployed agent ARN
+- **Secrets Manager**: `idp-mcp/cognito/credentials` - Stores authentication credentials
+- **Cognito**: Uses existing user pool from IDP project
 
 ## Usage Examples
 
@@ -222,7 +222,7 @@ result = await session.call_tool(
 
 ### CloudWatch Logs
 Monitor the MCP server through CloudWatch logs:
-- Log Group: `/aws/bedrock-agentcore/runtimes/tabulate-mcp-*`
+- Log Group: `/aws/bedrock-agentcore/runtimes/idp-mcp-*`
 
 ### Common Issues
 
@@ -256,7 +256,7 @@ To remove the deployed MCP server:
    - Parameter Store parameters
    - Secrets Manager secrets
 
-Note: The original tabulate infrastructure (Step Functions, S3, Cognito) remains unchanged.
+Note: The original IDP infrastructure (Step Functions, S3, Cognito) remains unchanged.
 
 ## Support
 
@@ -264,8 +264,8 @@ For issues or questions:
 1. Check CloudWatch logs for error details
 2. Verify all prerequisites are met
 3. Ensure AWS credentials have required permissions
-4. Test with local client first before remote deployment
+4. Run the test suite to identify issues
 
 ## License
 
-This project follows the same license as the main tabulate project.
+This project follows the same license as the main IDP project.

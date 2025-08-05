@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Updated deployment script for Tabulate MCP Server
-Based on the working approach from deploy_tabulate_mcp_fixed.ipynb
+Updated deployment script for IDP Bedrock MCP Server
 Generates MCP configuration for Cline/Amazon Q integration
 """
 
@@ -9,6 +8,8 @@ import sys
 import os
 import json
 import time
+import yaml
+import argparse
 from boto3.session import Session
 
 # Import our utility functions
@@ -19,6 +20,47 @@ from utils import (
     create_agentcore_role,
     store_mcp_configuration,
 )
+
+
+def load_config_yml():
+    """Load and parse the config.yml file from the project root"""
+    config_path = os.path.join(os.path.dirname(__file__), "..", "..", "config.yml")
+    
+    if not os.path.exists(config_path):
+        print(f"❌ Config file not found at: {config_path}")
+        print("Make sure you have a config.yml file in the project root")
+        return None
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        return config
+    except Exception as e:
+        print(f"❌ Error loading config.yml: {e}")
+        return None
+
+
+def get_username_from_config(config, custom_username=None):
+    """Extract username from config.yml or use custom username"""
+    if custom_username:
+        print(f"Using custom username: {custom_username}")
+        return custom_username
+    
+    if not config:
+        return None
+    
+    try:
+        users = config.get('authentication', {}).get('users', [])
+        if not users:
+            print("❌ No users found in config.yml authentication section")
+            return None
+        
+        username = users[0]  # Use the first user
+        print(f"Using username from config.yml: {username}")
+        return username
+    except Exception as e:
+        print(f"❌ Error parsing username from config.yml: {e}")
+        return None
 
 
 def generate_cline_mcp_config(agent_arn, cognito_config, mcp_user_config, region):
@@ -35,7 +77,7 @@ def generate_cline_mcp_config(agent_arn, cognito_config, mcp_user_config, region
     # Cline configuration (stdio interface) - using existing test_client_remote.py
     cline_config = {
         "mcpServers": {
-            "tabulate": {
+            "idp-bedrock": {
                 "autoApprove": [],
                 "disabled": False,
                 "timeout": 300,
@@ -65,21 +107,21 @@ def generate_cline_mcp_config(agent_arn, cognito_config, mcp_user_config, region
 
 
 def verify_infrastructure():
-    """Verify existing tabulate infrastructure"""
-    print("🔍 Step 1: Verifying existing tabulate infrastructure...")
+    """Verify existing IDP infrastructure"""
+    print("🔍 Step 1: Verifying existing IDP infrastructure...")
     print("-" * 50)
 
     cognito_config = get_existing_cognito_config()
     if not cognito_config:
         print("❌ Could not find existing Cognito configuration.")
-        print("Make sure the tabulate project is deployed with Cognito enabled.")
+        print("Make sure the IDP project is deployed with Cognito enabled.")
         sys.exit(1)
 
     print()
     infra_config = get_existing_infrastructure_config()
     if not infra_config:
         print("❌ Could not find existing infrastructure.")
-        print("Make sure the tabulate project is deployed.")
+        print("Make sure the IDP project is deployed.")
         sys.exit(1)
 
     print("✅ All existing infrastructure verified!")
@@ -87,14 +129,14 @@ def verify_infrastructure():
     return cognito_config, infra_config
 
 
-def authenticate_user(cognito_config):
+def authenticate_user(cognito_config, username):
     """Authenticate existing Cognito user"""
     print("👤 Step 2: Using existing Cognito user...")
     print("-" * 40)
 
     mcp_user_config = create_mcp_user_in_existing_pool(
         cognito_config=cognito_config,
-        username="egorkr@amazon.co.uk",  # This should match the user from config.yml
+        username=username,
         password=None,  # Will prompt for password
     )
 
@@ -152,7 +194,7 @@ def setup_agentcore_runtime(cognito_config, infra_config, agentcore_iam_role, re
         region=region,
         authorizer_configuration=auth_config,
         protocol="MCP",
-        agent_name="tabulateagent",
+        agent_name="idp_bedrock_agent",
     )
     print("✅ Runtime configured successfully")
     return agentcore_runtime
@@ -187,7 +229,7 @@ def deploy_and_wait(agentcore_runtime):
 
     if status == "READY":
         print("🎉 AgentCore Runtime is READY!")
-        print("✅ Tabulate MCP Server deployed successfully!")
+        print("✅ IDP with Amazon Bedrock MCP Server deployed successfully!")
     else:
         print(f"⚠️  AgentCore Runtime status: {status}")
         if status in ["CREATE_FAILED", "UPDATE_FAILED"]:
@@ -243,7 +285,7 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
     # Final summary
     print("\n🎉 Deployment Complete!")
     print("=" * 60)
-    print("Your Tabulate MCP Server has been successfully deployed!")
+    print("Your IDP with Amazon Bedrock MCP Server has been successfully deployed!")
     print()
     print("📋 Deployment Summary:")
     print(f"   Agent ARN: {launch_result.agent_arn}")
@@ -253,8 +295,8 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
     print(f"   S3 Bucket: {infra_config['bucket_name']}")
     print()
     print("🔗 Access Information:")
-    print("   Parameter Store: /tabulate-mcp/runtime/agent_arn")
-    print("   Secrets Manager: tabulate-mcp/cognito/credentials")
+    print("   Parameter Store: /idp-bedrock-mcp/runtime/agent_arn")
+    print("   Secrets Manager: idp-bedrock-mcp/cognito/credentials")
     print()
     print("📁 Generated Files:")
     print("   cline_mcp_config.json - For Cline/Amazon Q")
@@ -269,13 +311,29 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
 
 def main():
     """Main deployment function - updated to match fixed notebook approach"""
-    print("🚀 Tabulate MCP Server Deployment (Updated)")
-    print("=" * 60)
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Deploy IDP with Amazon Bedrock MCP Server')
+    parser.add_argument('--username', '-u', type=str, help='Custom username for Cognito authentication (overrides config.yml)')
+    args = parser.parse_args()
+
+    print("🚀 IDP with Amazon Bedrock MCP Server Deployment")
+    print("============================================================")
     print("This script deploys using the proven approach from the fixed notebook")
     print("and generates MCP configuration for Cline/Amazon Q integration")
     print()
 
     try:
+        # Load config.yml and get username
+        print("📋 Loading configuration...")
+        config = load_config_yml()
+        username = get_username_from_config(config, args.username)
+        
+        if not username:
+            print("❌ Could not determine username. Please:")
+            print("   1. Ensure config.yml exists with authentication.users section")
+            print("   2. Or provide username with --username parameter")
+            sys.exit(1)
+        
         # Get AWS region
         boto_session = Session()
         region = boto_session.region_name
@@ -286,12 +344,12 @@ def main():
         cognito_config, infra_config = verify_infrastructure()
 
         # Step 2: Authenticate user
-        mcp_user_config = authenticate_user(cognito_config)
+        mcp_user_config = authenticate_user(cognito_config, username)
 
         # Step 3: Create IAM role
         print("🔐 Step 3: Creating IAM role for AgentCore Runtime...")
         print("-" * 50)
-        agentcore_iam_role = create_agentcore_role(agent_name="tabulateagent")
+        agentcore_iam_role = create_agentcore_role(agent_name="idp-mcp-agent")
         print(f"✅ IAM role created: {agentcore_iam_role['Role']['Arn']}")
         print()
 
@@ -310,7 +368,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Deployment failed: {e}")
         print("\nTroubleshooting:")
-        print("   1. Ensure the tabulate project is deployed")
+        print("   1. Ensure the IDP project is deployed")
         print("   2. Check AWS credentials and permissions")
         print("   3. Verify Docker is running")
         print("   4. Check CloudWatch logs for detailed errors")
