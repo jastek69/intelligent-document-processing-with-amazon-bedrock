@@ -58,29 +58,29 @@ show_usage() {
 # Function to get bearer token from AWS Secrets Manager
 get_bearer_token() {
     print_status "🔐 Fetching bearer token from AWS Secrets Manager..."
-    
+
     # Get the secret value
     local secret_json
     secret_json=$(aws secretsmanager get-secret-value \
         --secret-id "idp-bedrock-mcp/cognito/credentials" \
         --query SecretString \
         --output text 2>/dev/null)
-    
+
     if [ $? -ne 0 ]; then
         print_error "Failed to retrieve secret from AWS Secrets Manager"
         print_info "Make sure you have AWS credentials configured and access to the secret"
         exit 1
     fi
-    
+
     # Extract bearer token from JSON
     local bearer_token
     bearer_token=$(echo "$secret_json" | jq -r '.bearer_token' 2>/dev/null)
-    
+
     if [ $? -ne 0 ] || [ "$bearer_token" = "null" ] || [ -z "$bearer_token" ]; then
         print_error "Failed to extract bearer token from secret"
         exit 1
     fi
-    
+
     print_success "Successfully retrieved bearer token from AWS Secrets Manager"
     echo "$bearer_token"
 }
@@ -90,13 +90,13 @@ update_cline_config() {
     local config_path="$1"
     local new_token="$2"
     local dry_run="$3"
-    
+
     # Check if config file exists
     if [ ! -f "$config_path" ]; then
         print_error "Cline MCP settings file not found: $config_path"
         exit 1
     fi
-    
+
     # Check if jq is available
     if ! command -v jq &> /dev/null; then
         print_error "jq is required but not installed. Please install jq first."
@@ -104,21 +104,21 @@ update_cline_config() {
         print_info "On Ubuntu/Debian: sudo apt-get install jq"
         exit 1
     fi
-    
+
     # Find the tabulate-bedrock server key
     local server_key
     server_key=$(jq -r '.mcpServers | to_entries[] | select(.key | test("tabulate|bedrock"; "i")) | .key' "$config_path" 2>/dev/null | head -n1)
-    
+
     if [ -z "$server_key" ] || [ "$server_key" = "null" ]; then
         print_error "Tabulate Bedrock MCP server configuration not found in Cline settings"
         print_info "Looking for servers with 'tabulate' or 'bedrock' in the name"
         exit 1
     fi
-    
+
     # Get current token for comparison
     local old_token
     old_token=$(jq -r ".mcpServers[\"$server_key\"].headers.Authorization // \"\"" "$config_path" 2>/dev/null | sed 's/Bearer //' | cut -c1-50)
-    
+
     if [ "$dry_run" = "true" ]; then
         print_status "🔍 DRY RUN - Would update the following:"
         print_info "Config file: $config_path"
@@ -128,18 +128,18 @@ update_cline_config() {
         print_info "(No changes made)"
         return 0
     fi
-    
+
     # Create backup
     local backup_path="${config_path}.backup.$(date +%Y%m%d_%H%M%S)"
     cp "$config_path" "$backup_path"
     print_info "Created backup: $backup_path"
-    
+
     # Update the bearer token
     local temp_file
     temp_file=$(mktemp)
-    
+
     jq ".mcpServers[\"$server_key\"].headers.Authorization = \"Bearer $new_token\"" "$config_path" > "$temp_file"
-    
+
     if [ $? -eq 0 ]; then
         mv "$temp_file" "$config_path"
         print_success "Successfully updated bearer token in Cline MCP settings"
@@ -158,7 +158,7 @@ update_cline_config() {
 main() {
     local config_path="$DEFAULT_CONFIG_PATH"
     local dry_run="false"
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -181,20 +181,20 @@ main() {
                 ;;
         esac
     done
-    
+
     print_status "🔄 Updating Cline MCP Bearer Token..."
     echo "=================================================="
-    
+
     print_info "Config file: $config_path"
-    
+
     # Get new bearer token
     local new_token
     new_token=$(get_bearer_token)
-    
+
     # Update Cline configuration
     print_status "📝 Updating Cline MCP configuration..."
     update_cline_config "$config_path" "$new_token" "$dry_run"
-    
+
     if [ "$dry_run" = "false" ]; then
         echo ""
         print_success "Bearer token update completed successfully!"

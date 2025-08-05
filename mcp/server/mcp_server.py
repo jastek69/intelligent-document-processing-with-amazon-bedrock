@@ -117,66 +117,66 @@ def is_local_file_path(path: str) -> bool:
     # Check if it's an absolute path or relative path that exists locally
     path_obj = Path(path)
     return (
-        path_obj.is_absolute() or  # Absolute paths like /home/user/doc.pdf
-        path.startswith("./") or   # Relative paths like ./doc.pdf
-        path.startswith("../") or  # Parent directory paths like ../doc.pdf
-        (not "/" in path and path_obj.exists())  # Simple filenames that exist locally
+        path_obj.is_absolute()  # Absolute paths like /home/user/doc.pdf
+        or path.startswith("./")  # Relative paths like ./doc.pdf
+        or path.startswith("../")  # Parent directory paths like ../doc.pdf
+        or ("/" not in path and path_obj.exists())  # Simple filenames that exist locally
     )
 
 
 def upload_local_file_to_s3(local_path: str, bucket_name: str) -> str:
     """
     Upload a local file to S3 and return the S3 key
-    
+
     Args:
         local_path: Local file path
         bucket_name: S3 bucket name
-        
+
     Returns:
         S3 key for the uploaded file
-        
+
     Raises:
         Exception: If upload fails
     """
     if not bucket_name:
         raise Exception("S3 bucket not configured. Cannot upload local files.")
-    
+
     path_obj = Path(local_path)
-    
+
     if not path_obj.exists():
         raise Exception(f"Local file does not exist: {local_path}")
-    
+
     if not path_obj.is_file():
         raise Exception(f"Path is not a file: {local_path}")
-    
+
     # Generate a unique S3 key to avoid conflicts
     file_extension = path_obj.suffix
     unique_id = str(uuid.uuid4())[:8]
     s3_key = f"uploaded/{path_obj.stem}_{unique_id}{file_extension}"
-    
+
     try:
         # Upload the file to S3
         s3_client.upload_file(str(path_obj), bucket_name, s3_key)
         print(f"📤 Uploaded {local_path} to s3://{bucket_name}/{s3_key}")
         return s3_key
-        
+
     except Exception as e:
-        raise Exception(f"Failed to upload {local_path} to S3: {str(e)}")
+        raise Exception(f"Failed to upload {local_path} to S3: {str(e)}") from e
 
 
 def process_document_paths(documents: List[str]) -> tuple[List[str], List[str]]:
     """
     Process document paths, uploading local files to S3 if needed
-    
+
     Args:
         documents: List of document paths (mix of local paths and S3 keys)
-        
+
     Returns:
         Tuple of (processed_s3_keys, upload_info)
     """
     processed_documents = []
     upload_info = []
-    
+
     for doc_path in documents:
         if is_local_file_path(doc_path):
             try:
@@ -184,12 +184,12 @@ def process_document_paths(documents: List[str]) -> tuple[List[str], List[str]]:
                 processed_documents.append(s3_key)
                 upload_info.append(f"Uploaded {doc_path} → s3://{BUCKET_NAME}/{s3_key}")
             except Exception as e:
-                raise Exception(f"Failed to process local file {doc_path}: {str(e)}")
+                raise Exception(f"Failed to process local file {doc_path}: {str(e)}") from e
         else:
             # Assume it's already an S3 key
             processed_documents.append(doc_path)
             upload_info.append(f"Using existing S3 key: {doc_path}")
-    
+
     return processed_documents, upload_info
 
 
@@ -273,7 +273,8 @@ def extract_document_attributes(
     using large language models. It supports various parsing modes and can handle batch processing.
 
     Args:
-        documents: List of document paths - can be local file paths or S3 keys (e.g., ["./my_doc.pdf", "originals/email_1.txt"])
+        documents: List of document paths - S3 keys
+            (e.g., ["originals/email_1.txt"])
         attributes: List of attribute definitions, each containing:
             - name: str - Name of the attribute (e.g., "customer_name")
             - description: str - Description of what to extract
@@ -316,7 +317,7 @@ def extract_document_attributes(
     try:
         # Process document paths - upload local files to S3 if needed
         processed_documents, upload_info = process_document_paths(documents)
-        
+
         results = run_idp_bedrock_api(
             state_machine_arn=STATE_MACHINE_ARN,
             documents=processed_documents,
@@ -411,7 +412,7 @@ def upload_and_extract_attributes(
 ) -> Dict[str, Any]:
     """
     Upload files directly and extract attributes in one step.
-    
+
     This tool accepts file content directly via HTTP and uploads to S3 automatically,
     then processes the files for attribute extraction.
 
@@ -466,46 +467,46 @@ def upload_and_extract_attributes(
 
     try:
         import base64
-        
+
         uploaded_files = []
         upload_info = []
-        
+
         # Upload each file to S3
         for file_data in files:
             file_name = file_data.get("name", "unnamed_file")
             file_content = file_data.get("content", "")
-            
+
             if not file_content:
                 raise Exception(f"No content provided for file: {file_name}")
-            
+
             # Decode base64 content
             try:
                 decoded_content = base64.b64decode(file_content)
             except Exception as e:
-                raise Exception(f"Failed to decode base64 content for {file_name}: {str(e)}")
-            
+                raise Exception(f"Failed to decode base64 content for {file_name}: {str(e)}") from e
+
             # Generate unique S3 key
             file_path = Path(file_name)
             file_extension = file_path.suffix
             unique_id = str(uuid.uuid4())[:8]
             s3_key = f"uploaded/{file_path.stem}_{unique_id}{file_extension}"
-            
+
             # Upload to S3
             try:
                 s3_client.put_object(
                     Bucket=BUCKET_NAME,
                     Key=s3_key,
                     Body=decoded_content,
-                    ContentType=file_data.get("mime_type", "application/octet-stream")
+                    ContentType=file_data.get("mime_type", "application/octet-stream"),
                 )
-                
+
                 uploaded_files.append(s3_key)
                 upload_info.append(f"Uploaded {file_name} → s3://{BUCKET_NAME}/{s3_key}")
                 print(f"📤 Uploaded {file_name} to s3://{BUCKET_NAME}/{s3_key}")
-                
+
             except Exception as e:
-                raise Exception(f"Failed to upload {file_name} to S3: {str(e)}")
-        
+                raise Exception(f"Failed to upload {file_name} to S3: {str(e)}") from e
+
         # Process uploaded files
         results = run_idp_bedrock_api(
             state_machine_arn=STATE_MACHINE_ARN,
@@ -526,13 +527,7 @@ def upload_and_extract_attributes(
         }
 
     except Exception as e:
-        return {
-            "success": False, 
-            "error": str(e), 
-            "processed_files": 0, 
-            "extracted_attributes": [],
-            "upload_info": []
-        }
+        return {"success": False, "error": str(e), "processed_files": 0, "extracted_attributes": [], "upload_info": []}
 
 
 @mcp.tool()
@@ -545,7 +540,10 @@ def get_bucket_info() -> Dict[str, Any]:
     """
     return {
         "bucket_name": BUCKET_NAME or "Not configured",
-        "usage": "Upload documents to this S3 bucket before processing, or use upload_and_extract_attributes for direct file upload",
+        "usage": (
+            "Upload documents to this S3 bucket before processing, "
+            "or use upload_and_extract_attributes for direct file upload"
+        ),
         "supported_formats": [
             "Text files: .txt",
             "PDF files: .pdf",
