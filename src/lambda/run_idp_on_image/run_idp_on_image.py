@@ -11,11 +11,9 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from typing import Union
+from typing import Union, Any
 
 import boto3
-from mypy_boto3_s3 import S3Client
-from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 from model.bedrock import call_bedrock
 from botocore.config import Config
 from helpers import (
@@ -102,7 +100,7 @@ def parse_event(event: dict) -> dict:
     return event["body"]
 
 
-def download_file_from_s3(file_key: str, s3_client: S3Client, bucket: str) -> Union[str, None]:
+def download_file_from_s3(file_key: str, s3_client: Any, bucket: str) -> Union[str, None]:
     """
     Download a file from S3 to local lambda storage
 
@@ -130,7 +128,7 @@ def process_chunk(
     model_id: str,
     system_prompt: str,
     temperature: float,
-    bedrock_client: BedrockRuntimeClient,
+    bedrock_client: Any,
     logger: logging.Logger,
 ) -> tuple[dict, str]:
     """
@@ -177,7 +175,7 @@ def process_chunks(
     model_id: str,
     system_prompt: str,
     temperature: float,
-    bedrock_client: BedrockRuntimeClient,
+    bedrock_client: Any,
     parallel_processing: bool,
     logger: logging.Logger,
 ):
@@ -258,7 +256,7 @@ def prepare_and_store_response(
     all_responses: list[dict],
     all_raw_responses: list[str],
     file_name: str,
-    s3_client: S3Client,
+    s3_client: Any,
     bucket: str,
     prefix: str,
 ) -> str:

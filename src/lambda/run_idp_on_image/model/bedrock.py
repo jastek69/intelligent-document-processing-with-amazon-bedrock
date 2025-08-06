@@ -3,7 +3,6 @@ Copyright © Amazon.com and Affiliates
 """
 
 import boto3
-from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 import logging
 import time
@@ -46,7 +45,7 @@ def get_model_params() -> dict:
 
 
 def generate_conversation(
-    bedrock_client: BedrockRuntimeClient,
+    bedrock_client: Any,
     model_id: str,
     system_prompts: list[dict],
     messages: list[dict],
@@ -157,7 +156,7 @@ def call_bedrock(
     model_id: str = "anthropic.claude-3-sonnet-20240229-v1:0",
     system_prompt: str = "Act as a useful assistant",
     profile_name: str = "",
-    bedrock_client: Union[BedrockRuntimeClient, None] = None,
+    bedrock_client: Union[Any, None] = None,
     temperature: float = 0.0,
     top_k: int = 200,
     top_p: float = 1.0,
