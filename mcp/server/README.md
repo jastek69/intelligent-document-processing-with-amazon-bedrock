@@ -40,17 +40,11 @@ cd mcp/server
 # Run basic tests (recommended)
 python test_mcp_server.py
 
-# Run full test suite including document extraction and direct upload
+# Run full test suite including document extraction
 python test_mcp_server.py --full
-
-# Run with direct file upload test
-python test_mcp_server.py --with-upload
 
 # Run only document extraction test
 python test_mcp_server.py --extraction-only
-
-# Run only direct file upload test
-python test_mcp_server.py --upload-only
 ```
 
 ### Using Pytest
@@ -76,18 +70,23 @@ The server provides the following MCP tools:
 Extract structured attributes from documents using Amazon Bedrock LLMs.
 
 **Parameters:**
-- `documents`: List of S3 document keys (e.g., `["originals/email_1.txt", "uploaded/document.pdf"]`)
+- `documents`: List of document paths - supports multiple input types:
+  - S3 keys: `["originals/email_1.txt", "uploaded/document.pdf"]`
+  - S3 URIs: `["s3://my-bucket/documents/file.pdf", "s3://external-bucket/doc.txt"]`
+  - Presigned URLs: `["https://bucket.s3.amazonaws.com/file.pdf?X-Amz-Signature=..."]`
 - `attributes`: List of attribute definitions to extract
 - `parsing_mode`: Processing mode (default: "Amazon Bedrock LLM")
 - `model_params`: LLM configuration (model_id, temperature, etc.)
 
-**Important Note:**
-This tool works with documents already stored in S3. Since the MCP server runs on AWS Bedrock AgentCore Runtime (in the cloud), it cannot access local files on your machine. For local file processing, use the `upload_and_extract_attributes` tool instead.
+**Supported Input Types:**
+- **S3 keys**: Used directly if in the configured bucket
+- **S3 URIs**: Files copied from external buckets if needed
+- **Presigned URLs**: Files downloaded and uploaded to our bucket
 
 **Example:**
 ```json
 {
-  "documents": ["originals/email_1.txt", "uploaded/customer_doc.pdf"],
+  "documents": ["originals/email_1.txt", "s3://external-bucket/invoice.pdf"],
   "attributes": [
     {"name": "sender_name", "description": "name of the person who sent the email"},
     {"name": "sentiment", "description": "overall sentiment of the email"}
@@ -100,58 +99,13 @@ This tool works with documents already stored in S3. Since the MCP server runs o
 }
 ```
 
-### 2. `upload_and_extract_attributes`
-Upload files directly via HTTP and extract attributes in one step.
-
-**Parameters:**
-- `files`: List of file objects with base64 encoded content
-- `attributes`: List of attribute definitions to extract
-- `parsing_mode`: Processing mode (default: "Amazon Bedrock LLM")
-- `model_params`: LLM configuration (model_id, temperature, etc.)
-
-**Direct File Upload:**
-This tool accepts file content directly via HTTP streamable transport:
-- **Base64 encoding**: Files are encoded as base64 strings
-- **Automatic S3 upload**: Server handles S3 upload with unique naming
-- **Immediate processing**: Upload + extraction in one API call
-- **Multiple files**: Can process multiple files simultaneously
-
-**Example:**
-```json
-{
-  "files": [
-    {
-      "name": "customer_email.txt",
-      "content": "RGVhciBTaXIvTWFkYW0s...",
-      "mime_type": "text/plain"
-    }
-  ],
-  "attributes": [
-    {"name": "customer_name", "description": "name of the customer"},
-    {"name": "tracking_number", "description": "shipment tracking number"},
-    {"name": "urgency", "description": "urgency level: low, medium, high"}
-  ]
-}
-```
-
-**Response includes upload information:**
-```json
-{
-  "success": true,
-  "results": [...],
-  "upload_info": [
-    "Uploaded customer_email.txt → s3://bucket/uploaded/customer_email_abc123.txt"
-  ]
-}
-```
-
-### 3. `get_extraction_status`
+### 2. `get_extraction_status`
 Check the status of a document extraction job.
 
 **Parameters:**
 - `execution_arn`: The Step Functions execution ARN to check
 
-### 4. `list_supported_models`
+### 3. `list_supported_models`
 Get a list of available Amazon Bedrock models for document processing.
 
 **Parameters:** None
@@ -161,7 +115,7 @@ Get a list of available Amazon Bedrock models for document processing.
 - Default model information
 - Model recommendations for speed vs quality
 
-### 5. `get_bucket_info`
+### 4. `get_bucket_info`
 Get information about the S3 bucket used for document storage.
 
 **Parameters:** None

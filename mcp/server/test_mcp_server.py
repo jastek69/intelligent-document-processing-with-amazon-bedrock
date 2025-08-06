@@ -422,140 +422,7 @@ class MCPTester:
             self.print_test("Document Extraction", "FAIL")
             return False
 
-    def _prepare_demo_file(self, demo_file_path: str) -> str | None:
-        """Helper method to read and encode demo file."""
-        import base64
-        import os
-
-        if not os.path.exists(demo_file_path):
-            self.print_error(f"Demo file not found: {demo_file_path}")
-            return None
-
-        try:
-            with open(demo_file_path, "rb") as f:
-                file_content = f.read()
-
-            base64_content = base64.b64encode(file_content).decode("utf-8")
-            self.print_info(f"Encoded demo file: {len(file_content)} bytes → {len(base64_content)} chars")
-            return base64_content
-
-        except Exception as e:
-            self.print_error(f"Failed to read/encode demo file: {e}")
-            return None
-
-    def _create_upload_request(self, base64_content: str) -> dict:
-        """Helper method to create upload request."""
-        return {
-            "jsonrpc": "2.0",
-            "id": 6,
-            "method": "tools/call",
-            "params": {
-                "name": "upload_and_extract_attributes",
-                "arguments": {
-                    "files": [{"name": "customer_email.txt", "content": base64_content, "mime_type": "text/plain"}],
-                    "attributes": [
-                        {"name": "customer_name", "description": "name of the customer who sent the email"},
-                        {"name": "tracking_number", "description": "shipment tracking number mentioned in the email"},
-                        {"name": "issue_type", "description": "type of customer issue or inquiry"},
-                        {"name": "urgency", "description": "urgency level of the request: low, medium, high"},
-                    ],
-                    "parsing_mode": "Amazon Bedrock LLM",
-                    "model_params": {"model_id": "us.anthropic.claude-3-haiku-20240307-v1:0", "temperature": 0.1},
-                },
-            },
-        }
-
-    def _process_upload_response(self, response) -> bool:
-        """Helper method to process upload response."""
-        if response.status_code == 200:
-            return self._handle_success_response(response)
-        if response.status_code == 429:
-            self.print_warning("Rate limited - direct upload likely working")
-            self.print_test("Direct File Upload", "WARN")
-            return True
-
-        self.print_error(f"HTTP error: {response.status_code}")
-        self.print_test("Direct File Upload", "FAIL")
-        return False
-
-    def _handle_success_response(self, response) -> bool:
-        """Helper method to handle successful response."""
-        if "text/event-stream" in response.headers.get("content-type", ""):
-            json_data = self.parse_sse_response(response.text)
-            if not json_data:
-                self.print_error("Could not parse direct upload response")
-                self.print_test("Direct File Upload", "FAIL")
-                return False
-            result = json_data
-        else:
-            result = response.json()
-
-        if "result" in result and "content" in result["result"]:
-            content = result["result"]["content"][0]["text"]
-            upload_data = json.loads(content)
-
-            if upload_data.get("success"):
-                self._display_upload_results(upload_data)
-                self.print_test("Direct File Upload", "PASS")
-                return True
-
-            self.print_error(f"Upload failed: {upload_data.get('error')}")
-            self.print_test("Direct File Upload", "FAIL")
-            return False
-
-        self.print_error("Unexpected response format")
-        self.print_test("Direct File Upload", "FAIL")
-        return False
-
-    def _display_upload_results(self, upload_data: dict) -> None:
-        """Helper method to display upload results."""
-        self.print_success("Direct file upload successful!")
-
-        # Show upload information
-        if "upload_info" in upload_data:
-            for info in upload_data["upload_info"]:
-                self.print_success(f"📤 {info}")
-
-        # Show extraction results
-        for doc_result in upload_data["results"]:
-            self.print_info(f"📄 Processed: {doc_result['file_key']}")
-            for attr_name, attr_value in doc_result["attributes"].items():
-                self.print_info(f"   🔹 {attr_name.replace('_', ' ').title()}: {attr_value}")
-
-        self.print_success(f"Processed {upload_data['processed_files']} file(s)")
-        self.print_success(f"Extracted {len(upload_data['extracted_attributes'])} attribute(s)")
-
-    def test_direct_file_upload(self) -> bool:
-        """Test 7: Direct File Upload via HTTP (Optional)"""
-        self.print_test("Direct File Upload", "RUNNING")
-
-        # Use real demo file
-        demo_file_path = "../../demo/originals/email_1.txt"
-
-        base64_content = self._prepare_demo_file(demo_file_path)
-        if not base64_content:
-            self.print_test("Direct File Upload", "FAIL")
-            return False
-
-        upload_request = self._create_upload_request(base64_content)
-
-        try:
-            self.print_info("Testing direct file upload with real demo file...")
-            self.print_info("This may take 30-60 seconds...")
-            time.sleep(5)  # Rate limiting delay
-
-            response = requests.post(
-                self.config["mcp_url"], headers=self.config["headers"], json=upload_request, timeout=180
-            )
-
-            return self._process_upload_response(response)
-
-        except Exception as e:
-            self.print_error(f"Request failed: {e}")
-            self.print_test("Direct File Upload", "FAIL")
-            return False
-
-    def run_test_suite(self, include_extraction: bool = False, include_direct_upload: bool = False) -> bool:
+    def run_test_suite(self, include_extraction: bool = False) -> bool:
         """Run the complete test suite"""
         self.print_header("🚀 IDP with Amazon Bedrock MCP Server Test Suite")
 
@@ -570,9 +437,6 @@ class MCPTester:
 
         if include_extraction:
             tests.append(("Document Extraction", self.test_document_extraction))
-
-        if include_direct_upload:
-            tests.append(("Direct File Upload", self.test_direct_file_upload))
 
         # Run tests
         results = []
@@ -622,9 +486,7 @@ Examples:
     )
 
     parser.add_argument("--full", action="store_true", help="Run full test suite including document extraction")
-    parser.add_argument("--with-upload", action="store_true", help="Include direct file upload test")
     parser.add_argument("--extraction-only", action="store_true", help="Run only document extraction test")
-    parser.add_argument("--upload-only", action="store_true", help="Run only direct file upload test")
 
     args = parser.parse_args()
 
@@ -637,27 +499,14 @@ Examples:
             success = tester.test_document_extraction()
         else:
             success = False
-    elif args.upload_only:
-        # Run only direct upload test
-        tester.print_header("🧪 Direct File Upload Test Only")
-        if tester.test_configuration():
-            success = tester.test_direct_file_upload()
-        else:
-            success = False
     else:
         # Run test suite
         include_extraction = args.full
-        include_direct_upload = args.with_upload or args.full
 
-        if not include_extraction and not include_direct_upload:
-            print(
-                f"\n{Colors.YELLOW}💡 Running basic test suite. "
-                f"Use --full for all tests or --with-upload for direct upload test.{Colors.END}"
-            )
+        if not include_extraction:
+            print(f"\n{Colors.YELLOW}💡 Running basic test suite. Use --full for document extraction test.{Colors.END}")
 
-        success = tester.run_test_suite(
-            include_extraction=include_extraction, include_direct_upload=include_direct_upload
-        )
+        success = tester.run_test_suite(include_extraction=include_extraction)
 
     return 0 if success else 1
 

@@ -57,7 +57,7 @@ show_usage() {
 
 # Function to get bearer token from AWS Secrets Manager
 get_bearer_token() {
-    print_status "🔐 Fetching bearer token from AWS Secrets Manager..."
+    print_status "🔐 Fetching bearer token from AWS Secrets Manager..." >&2
 
     # Get the secret value
     local secret_json
@@ -67,8 +67,8 @@ get_bearer_token() {
         --output text 2>/dev/null)
 
     if [ $? -ne 0 ]; then
-        print_error "Failed to retrieve secret from AWS Secrets Manager"
-        print_info "Make sure you have AWS credentials configured and access to the secret"
+        print_error "Failed to retrieve secret from AWS Secrets Manager" >&2
+        print_info "Make sure you have AWS credentials configured and access to the secret" >&2
         exit 1
     fi
 
@@ -77,11 +77,11 @@ get_bearer_token() {
     bearer_token=$(echo "$secret_json" | jq -r '.bearer_token' 2>/dev/null)
 
     if [ $? -ne 0 ] || [ "$bearer_token" = "null" ] || [ -z "$bearer_token" ]; then
-        print_error "Failed to extract bearer token from secret"
+        print_error "Failed to extract bearer token from secret" >&2
         exit 1
     fi
 
-    print_success "Successfully retrieved bearer token from AWS Secrets Manager"
+    print_success "Successfully retrieved bearer token from AWS Secrets Manager" >&2
     echo "$bearer_token"
 }
 
@@ -105,13 +105,13 @@ update_cline_config() {
         exit 1
     fi
 
-    # Find the tabulate-bedrock server key
+    # Find the idp-bedrock server key
     local server_key
-    server_key=$(jq -r '.mcpServers | to_entries[] | select(.key | test("tabulate|bedrock"; "i")) | .key' "$config_path" 2>/dev/null | head -n1)
+    server_key=$(jq -r '.mcpServers | to_entries[] | select(.key | test("idp.*bedrock|bedrock.*idp"; "i")) | .key' "$config_path" 2>/dev/null | head -n1)
 
     if [ -z "$server_key" ] || [ "$server_key" = "null" ]; then
-        print_error "Tabulate Bedrock MCP server configuration not found in Cline settings"
-        print_info "Looking for servers with 'tabulate' or 'bedrock' in the name"
+        print_error "IDP Bedrock MCP server configuration not found in Cline settings"
+        print_info "Looking for servers with 'idp-bedrock' or 'bedrock-idp' in the name"
         exit 1
     fi
 
@@ -204,3 +204,6 @@ main() {
 
 # Run main function with all arguments
 main "$@"
+
+
+# Please upload all documents from demo/originals folder to s3 and run extract attributes on them with bedrock parsing mode. Process only emails and the boarding pass for now

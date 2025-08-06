@@ -176,9 +176,11 @@ def list_cognito_users(cognito_client, user_pool_id):
 
 def get_user_password(username):
     """Get password for user, prompting if necessary"""
+    import getpass
+
     print(f"⚠️  Password required for user: {username}")
     print("Please provide the password for this user, or set a new one in Cognito console")
-    password = input(f"Enter password for {username}: ").strip()
+    password = getpass.getpass(f"Enter password for {username}: ").strip()
     if not password:
         print("❌ Password is required")
         return None
