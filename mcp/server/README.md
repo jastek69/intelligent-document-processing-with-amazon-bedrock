@@ -179,7 +179,7 @@ Bearer tokens expire periodically and need to be refreshed. Use the provided scr
 **The script will:**
 - ✅ Fetch the latest bearer token from AWS Secrets Manager
 - ✅ Automatically locate your Cline MCP settings file
-- ✅ Update the `tabulate-bedrock` server configuration
+- ✅ Update the `idp-bedrock` server configuration
 - ✅ Create a backup of your config before changes
 - ✅ Preserve all other settings unchanged
 

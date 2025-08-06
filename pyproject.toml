@@ -1,3 +1,11 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mcp*"]
+
 [project]
 name = "intelligent-document-processing-bedrock"
 version = "0.1.0"
@@ -7,22 +15,20 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "aws-cdk-lib>=2.196.0",
-    "cdk-nag>=2.35.101",
     "boto3>=1.38.17",
     "constructs>=10.0.0",
     "pyyaml>=6.0.0",
     "aws-lambda-powertools[validation]>=2.25.1",
     "mcp>=1.0.0",
     "fastmcp>=0.1.0",
-    "starlette>=0.27.0",
-    "botocore>=1.34.0",
-    "uvicorn>=0.24.0",
     "pydantic>=2.0.0",
     "typing-extensions>=4.0.0",
     "bedrock-agentcore-starter-toolkit",
     "bedrock-agentcore",
 ]
+
+[project.scripts]
+idp-bedrock-mcp-server = "mcp.stdio_server.mcp_stdio_server:main"
 
 [project.optional-dependencies]
 dev = [
