@@ -163,7 +163,11 @@ class CognitoAuthenticationConstruct(Construct):
             user_pool_client_name=f"{self.prefix}-client",
             generate_secret=False,
             access_token_validity=Duration.minutes(access_token_validity),
-            auth_flows=cognito.AuthFlow(user_password=True, user_srp=True),
+            auth_flows=cognito.AuthFlow(
+                user_password=True, 
+                user_srp=True,
+                admin_user_password=True
+            ),
             supported_identity_providers=[cognito.UserPoolClientIdentityProvider.COGNITO],
             o_auth=cognito.OAuthSettings(
                 flows=cognito.OAuthFlows(authorization_code_grant=True),
