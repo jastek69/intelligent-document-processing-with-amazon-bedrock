@@ -64,42 +64,43 @@ def get_username_from_config(config, custom_username=None):
 
 def generate_cline_mcp_config(agent_arn, cognito_config, mcp_user_config, region):
     """
-    Generate MCP configuration for Cline/Amazon Q
+    Generate MCP configuration for Cline/Amazon Q - AgentCore HTTP only
     """
     # Construct the MCP server URL
     encoded_arn = agent_arn.replace(":", "%3A").replace("/", "%2F")
     mcp_url = f"https://bedrock-agentcore.{region}.amazonaws.com/runtimes/{encoded_arn}/invocations?qualifier=DEFAULT"
 
-    # Get current working directory for absolute paths
-    current_dir = os.path.abspath(".")
-
-    # Cline configuration (stdio interface) - using existing test_client_remote.py
-    cline_config = {
+    # Cline configuration (streamableHttp interface) - direct AgentCore access
+    cline_agentcore_config = {
         "mcpServers": {
-            "idp-bedrock": {
-                "autoApprove": [],
+            "idp-bedrock-agentcore": {
                 "disabled": False,
-                "timeout": 300,
-                "type": "stdio",
-                "command": "python",
-                "args": [os.path.join(current_dir, "test_client_remote.py")],
-                "env": {"AWS_REGION": region},
+                "timeout": 30000,
+                "type": "streamableHttp",
+                "autoApprove": [],
+                "url": mcp_url,
+                "headers": {
+                    "Authorization": f"Bearer {mcp_user_config['bearer_token']}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
+                "debug": True,
             }
         }
     }
 
     return {
-        "cline_config": cline_config,
+        "cline_agentcore_config": cline_agentcore_config,
         "manual_config": {
             "server_url": mcp_url,
             "bearer_token": mcp_user_config["bearer_token"],
             "region": region,
             "agent_arn": agent_arn,
             "instructions": [
-                "1. Copy the cline_config to your Cline MCP settings",
-                "2. The configuration uses the existing test_client_remote.py script",
-                "3. Make sure the script path is correct for your system",
-                "4. The client handles authentication automatically via AWS credentials",
+                "1. This is the AgentCore HTTP configuration for remote access",
+                "2. Copy the cline_agentcore_config to your Cline MCP settings",
+                "3. For local stdio access, use the separate stdio server setup",
+                "4. The bearer token will need to be refreshed periodically",
             ],
         },
     }
@@ -205,7 +206,7 @@ def deploy_and_wait(agentcore_runtime):
     print("-" * 50)
     print("⏳ This may take several minutes...")
 
-    launch_result = agentcore_runtime.launch()
+    launch_result = agentcore_runtime.launch(auto_update_on_conflict=True)
 
     print("✅ Launch completed successfully!")
     print(f"Agent ARN: {launch_result.agent_arn}")
@@ -264,21 +265,23 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
         region=region,
     )
 
-    # Save configuration files
-    with open("cline_mcp_config.json", "w") as f:
-        json.dump(config_data["cline_config"], f, indent=2)
+    # Save configuration files in configs directory
+    os.makedirs("configs", exist_ok=True)
 
-    with open("mcp_manual_config.json", "w") as f:
+    with open("configs/cline_agentcore_config.json", "w") as f:
+        json.dump(config_data["cline_agentcore_config"], f, indent=2)
+
+    with open("configs/mcp_manual_config.json", "w") as f:
         json.dump(config_data["manual_config"], f, indent=2)
 
     print("✅ Generated MCP configuration files:")
-    print("   📄 cline_mcp_config.json - Configuration for Cline/Amazon Q")
-    print("   📄 mcp_manual_config.json - Manual configuration details")
+    print("   📄 configs/cline_agentcore_config.json - AgentCore HTTP configuration for Cline")
+    print("   📄 configs/mcp_manual_config.json - Manual configuration details")
 
     # Display the Cline config for easy copying
-    print("\n📋 Cline MCP Configuration (copy to Cline MCP settings):")
+    print("\n📋 Cline MCP Configuration (AgentCore HTTP):")
     print("=" * 60)
-    print(json.dumps(config_data["cline_config"], indent=2))
+    print(json.dumps(config_data["cline_agentcore_config"], indent=2))
     print("=" * 60)
 
     # Final summary

@@ -347,18 +347,68 @@ class MCPTester:
             self.print_test("AWS Integration", "FAIL")
             return False
 
-    def test_document_extraction(self) -> bool:
-        """Test 6: Document Extraction (Optional)"""
-        self.print_test("Document Extraction", "RUNNING")
+    def check_s3_file_exists(self, bucket_name: str, key: str) -> bool:
+        """Check if a file exists in S3"""
+        try:
+            s3_client = boto3.client("s3", region_name=self.config["region"])
+            s3_client.head_object(Bucket=bucket_name, Key=key)
+            return True
+        except Exception:
+            return False
 
-        extract_request = {
+    def get_bucket_name(self) -> str:
+        """Get the S3 bucket name from the MCP server"""
+        try:
+            bucket_request = {
+                "jsonrpc": "2.0",
+                "id": 99,
+                "method": "tools/call",
+                "params": {"name": "get_bucket_info", "arguments": {}},
+            }
+
+            response = requests.post(
+                self.config["mcp_url"], headers=self.config["headers"], json=bucket_request, timeout=30
+            )
+
+            if response.status_code == 200:
+                if "text/event-stream" in response.headers.get("content-type", ""):
+                    json_data = self.parse_sse_response(response.text)
+                    if json_data and "result" in json_data and "content" in json_data["result"]:
+                        content = json_data["result"]["content"][0]["text"]
+                        bucket_data = json.loads(content)
+                        return bucket_data.get("bucket_name")
+            return None
+        except Exception:
+            return None
+
+    def _validate_extraction_prerequisites(self) -> tuple[bool, str]:
+        """Validate prerequisites for document extraction test."""
+        test_document = "originals/email_1.txt"
+        bucket_name = self.get_bucket_name()
+
+        if not bucket_name:
+            self.print_warning("Could not determine S3 bucket name")
+            self.print_info("Skipping document extraction test")
+            return False, "WARN"
+
+        if not self.check_s3_file_exists(bucket_name, test_document):
+            self.print_warning(f"Test document '{test_document}' not found in S3 bucket '{bucket_name}'")
+            self.print_info("Skipping document extraction test - upload demo files first")
+            return False, "WARN"
+
+        self.print_success(f"Test document '{test_document}' found in S3")
+        return True, test_document
+
+    def _create_extraction_request(self, test_document: str) -> dict:
+        """Create the extraction request payload."""
+        return {
             "jsonrpc": "2.0",
             "id": 4,
             "method": "tools/call",
             "params": {
                 "name": "extract_document_attributes",
                 "arguments": {
-                    "documents": ["originals/email_1.txt"],
+                    "documents": [test_document],
                     "attributes": [
                         {"name": "sender_name", "description": "name of the person who sent the email"},
                         {"name": "sentiment", "description": "overall sentiment of the email"},
@@ -369,6 +419,65 @@ class MCPTester:
             },
         }
 
+    def _process_extraction_response(self, response) -> tuple[bool, str]:
+        """Process the extraction response and return success status and result type."""
+        if response.status_code == 200:
+            return self._handle_successful_response(response)
+        if response.status_code == 429:
+            self.print_warning("Rate limited - extraction likely working")
+            return True, "WARN"
+        self.print_error(f"HTTP error: {response.status_code}")
+        return False, "FAIL"
+
+    def _handle_successful_response(self, response) -> tuple[bool, str]:
+        """Handle successful HTTP response and parse extraction results."""
+        if "text/event-stream" in response.headers.get("content-type", ""):
+            json_data = self.parse_sse_response(response.text)
+            if not json_data:
+                self.print_error("Could not parse extraction response")
+                return False, "FAIL"
+            result = json_data
+        else:
+            result = response.json()
+
+        return self._parse_extraction_results(result)
+
+    def _parse_extraction_results(self, result: dict) -> tuple[bool, str]:
+        """Parse and display extraction results."""
+        if "result" not in result or "content" not in result["result"]:
+            self.print_error("Unexpected response format")
+            return False, "FAIL"
+
+        content = result["result"]["content"][0]["text"]
+        extraction_data = json.loads(content)
+
+        if extraction_data.get("success"):
+            self.print_success("Document extraction successful!")
+            self._display_extraction_results(extraction_data["results"])
+            return True, "PASS"
+        self.print_error(f"Extraction failed: {extraction_data.get('error')}")
+        return False, "FAIL"
+
+    def _display_extraction_results(self, results: list) -> None:
+        """Display the extraction results in a formatted way."""
+        for doc_result in results:
+            self.print_info(f"📄 Document: {doc_result['file_key']}")
+            for attr_name, attr_value in doc_result["attributes"].items():
+                self.print_info(f"   🔹 {attr_name.replace('_', ' ').title()}: {attr_value}")
+
+    def test_document_extraction(self) -> bool:
+        """Test 6: Document Extraction (Optional - only if test file exists)"""
+        self.print_test("Document Extraction", "RUNNING")
+
+        # Validate prerequisites
+        prerequisites_valid, result = self._validate_extraction_prerequisites()
+        if not prerequisites_valid:
+            self.print_test("Document Extraction", result)
+            return True
+
+        test_document = result
+        extract_request = self._create_extraction_request(test_document)
+
         try:
             self.print_info("Calling document extraction (may take 30-60 seconds)...")
             time.sleep(5)  # Rate limiting delay
@@ -377,45 +486,9 @@ class MCPTester:
                 self.config["mcp_url"], headers=self.config["headers"], json=extract_request, timeout=180
             )
 
-            if response.status_code == 200:
-                if "text/event-stream" in response.headers.get("content-type", ""):
-                    json_data = self.parse_sse_response(response.text)
-                    if not json_data:
-                        self.print_error("Could not parse extraction response")
-                        self.print_test("Document Extraction", "FAIL")
-                        return False
-                    result = json_data
-                else:
-                    result = response.json()
-
-                if "result" in result and "content" in result["result"]:
-                    content = result["result"]["content"][0]["text"]
-                    extraction_data = json.loads(content)
-
-                    if extraction_data.get("success"):
-                        self.print_success("Document extraction successful!")
-
-                        for doc_result in extraction_data["results"]:
-                            self.print_info(f"📄 Document: {doc_result['file_key']}")
-                            for attr_name, attr_value in doc_result["attributes"].items():
-                                self.print_info(f"   🔹 {attr_name.replace('_', ' ').title()}: {attr_value}")
-
-                        self.print_test("Document Extraction", "PASS")
-                        return True
-                    self.print_error(f"Extraction failed: {extraction_data.get('error')}")
-                    self.print_test("Document Extraction", "FAIL")
-                    return False
-                self.print_error("Unexpected response format")
-                self.print_test("Document Extraction", "FAIL")
-                return False
-
-            if response.status_code == 429:
-                self.print_warning("Rate limited - extraction likely working")
-                self.print_test("Document Extraction", "WARN")
-                return True
-            self.print_error(f"HTTP error: {response.status_code}")
-            self.print_test("Document Extraction", "FAIL")
-            return False
+            success, status = self._process_extraction_response(response)
+            self.print_test("Document Extraction", status)
+            return success
 
         except Exception as e:
             self.print_error(f"Request failed: {e}")

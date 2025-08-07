@@ -80,3 +80,10 @@ dyepack_scan/
 repomix-output.txt
 test_directs.py
 config.yml
+
+# MCP deployment generated files
+mcp/server/Dockerfile
+mcp/server/.dockerignore
+mcp/server/.bedrock_agentcore.yaml
+mcp/server/mcp_manual_config.json
+mcp/server/configs/

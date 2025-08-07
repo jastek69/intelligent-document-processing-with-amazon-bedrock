@@ -16,9 +16,17 @@ The MCP server provides a standardized interface for document processing capabil
 
 ## Quick Start
 
+### Prerequisites
+
+Before deploying the MCP server, ensure you have:
+1. **Successfully deployed the main IDP stack** using the root project deployment
+2. **Verified that all infrastructure is working** (Step Functions, S3, Cognito, Lambda functions)
+3. **Docker running** on your local machine
+4. **Cognito user configured** in your `config.yml`
+
 ### Deploying the MCP Server
 
-Before testing, you need to deploy the MCP server:
+Deploy the MCP server to Amazon Bedrock AgentCore Runtime:
 
 **Option A: Using the deployment script:**
 ```bash
@@ -29,6 +37,43 @@ python deploy_idp_bedrock_mcp.py
 ```bash
 jupyter notebook deploy_idp_bedrock_mcp.ipynb
 ```
+
+### Generated Configuration Files
+
+After successful deployment, you'll find configuration files in the `configs/` directory:
+
+- **`configs/cline_agentcore_config.json`** - HTTP configuration for Cline
+- **`configs/mcp_manual_config.json`** - Manual configuration details
+
+### Cline Integration
+
+Add the generated configuration to your Cline MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "idp-bedrock-agentcore": {
+      "disabled": false,
+      "timeout": 30000,
+      "type": "streamableHttp",
+      "autoApprove": [
+        "list_supported_models",
+        "extract_document_attributes",
+        "get_bucket_info"
+      ],
+      "url": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/...",
+      "headers": {
+        "Authorization": "Bearer ...",
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/event-stream"
+      },
+      "debug": true
+    }
+  }
+}
+```
+
+**Note**: This is a **streamableHttp** configuration for remote AgentCore access. For local development with file upload capabilities, use the separate stdio server in `mcp/stdio_server/`.
 
 ### Testing the MCP Server
 
