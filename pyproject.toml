@@ -34,7 +34,7 @@ dependencies = [
 
 
 [project.scripts]
-idp-bedrock-mcp-server = "mcp.stdio_server.mcp_stdio_server:main"
+idp-bedrock-mcp-server = "mcp.local_server.mcp_stdio_server:main"
 
 [project.optional-dependencies]
 dev = [
