@@ -19,23 +19,23 @@ DEFAULT_CONFIG_PATH="$HOME/Library/Application Support/Code/User/globalStorage/a
 
 # Function to print colored output
 print_status() {
-    echo -e "${CYAN}$1${NC}"
+    echo "${CYAN}$1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo "${GREEN}✅ $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo "${RED}❌ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo "${YELLOW}⚠️  $1${NC}"
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo "${BLUE}ℹ️  $1${NC}"
 }
 
 # Function to show usage
