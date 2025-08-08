@@ -73,14 +73,14 @@ Add the generated configuration to your Cline MCP settings:
 }
 ```
 
-**Note**: This is a **streamableHttp** configuration for remote AgentCore access. For local development with file upload capabilities, use the separate stdio server in `mcp/stdio_server/`.
+**Note**: This is a **streamableHttp** configuration for remote AgentCore access. For local development with file upload capabilities, use the separate local server in `mcp/local_server/`.
 
 ### Testing the MCP Server
 
 After deployment, test the MCP server using the comprehensive test suite:
 
 ```bash
-cd mcp/server
+cd mcp/bedrock_server
 
 # Run basic tests (recommended)
 python test_mcp_server.py
@@ -97,7 +97,7 @@ python test_mcp_server.py --extraction-only
 For development and CI/CD integration:
 
 ```bash
-cd mcp/server
+cd mcp/bedrock_server
 
 # Run all working tests
 python -m pytest tests/ -v
@@ -191,12 +191,12 @@ The server configuration is managed through AWS Systems Manager Parameter Store 
 ### Project Structure
 
 ```
-mcp/server/
-├── test_mcp_server.py           # Comprehensive test suite
+mcp/bedrock_server/
+├── test_mcp_server.py          # Comprehensive test suite
 ├── mcp_server.py               # Main MCP server implementation
 ├── utils.py                    # Utility functions
 ├── deploy_idp_bedrock_mcp.py   # Deployment script
-├── update_cline_token.sh       # Update Cline MCP bearer token (shell script)
+├── update_mcp_config.sh        # Update MCP bearer token (shell script)
 └── tests/                      # Additional test files
     ├── test_simple.py          # Basic connectivity tests
     ├── test_direct_http.py     # Direct HTTP tests
@@ -210,16 +210,16 @@ Bearer tokens expire periodically and need to be refreshed. Use the provided scr
 **Option A: Shell Script (Recommended)**
 ```bash
 # Update bearer token automatically
-./update_cline_token.sh
+./update_mcp_config.sh
 
 # Test what would be updated (dry run)
-./update_cline_token.sh --dry-run
+./update_mcp_config.sh --dry-run
 
 # Use custom Cline config path
-./update_cline_token.sh --config-path /path/to/cline_mcp_settings.json
+./update_mcp_config.sh --config-path /path/to/cline_mcp_settings.json
 
 # Show help
-./update_cline_token.sh --help
+./update_mcp_config.sh --help
 ```
 **The script will:**
 - ✅ Fetch the latest bearer token from AWS Secrets Manager

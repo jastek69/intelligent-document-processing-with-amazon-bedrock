@@ -1,6 +1,6 @@
-# IDP Bedrock MCP Server
+# IDP Bedrock MCP Server (Stdio)
 
-An MCP (Model Context Protocol) server that provides document attribute extraction capabilities using Amazon Bedrock and AWS document processing services.
+An MCP (Model Context Protocol) server that provides document attribute extraction capabilities using Amazon Bedrock and AWS document processing services. This is the **stdio (local) version** that runs locally and supports direct file upload.
 
 ## Features
 
@@ -9,40 +9,70 @@ An MCP (Model Context Protocol) server that provides document attribute extracti
 - **Intelligent Document Processing**: Uses Amazon Bedrock LLM for attribute extraction
 - **Batch Processing**: Process multiple documents in a single request
 - **Multiple Parsing Modes**: Amazon Textract, Amazon Bedrock LLM, and Bedrock Data Automation
+- **Easy Installation**: One-script deployment with automatic configuration generation
 
-## Installation
+## Quick Setup
+
+### Automated Deployment (Recommended)
+
+Run the deployment script from the `mcp/local_server/` directory:
+
+```bash
+cd mcp/local_server/
+./deploy_stdio_server.sh
+```
+
+This script will:
+1. Navigate to the repo root and install the package with `uv pip install -e .`
+2. Generate MCP configuration JSON file with correct paths
+3. Display setup instructions with the configuration file path
+
+### Manual Setup
+
+If you prefer manual setup:
+
+```bash
+# From the repo root directory
+uv pip install -e .
+```
 
 ## Configuration
 
-The server requires AWS credentials and the following environment variables (optional - will auto-discover if not set):
+The server requires AWS credentials and will auto-discover the following (optional environment variables):
 
 - `STATE_MACHINE_ARN`: ARN of the Step Functions state machine
 - `BUCKET_NAME`: S3 bucket name for document storage
 
-### For Local Development:
+### MCP Client Configuration:
 
-First install the package in editable mode:
-```bash
-uv pip install -e .
-```
-
-Then add to your MCP settings, Cline example:
+After running the deployment script, copy the configuration from `configs/mcp_stdio_config.json`:
 
 ```json
 {
   "mcpServers": {
     "idp-bedrock-stdio": {
-      "command": "/Users/egorkr/Projects/tabulate/.venv/bin/idp-bedrock-mcp-server",
-      "args": [],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
       "disabled": false,
-      "autoApprove": []
+      "timeout": 30000,
+      "type": "stdio",
+      "command": "/path/to/.venv/bin/idp-bedrock-mcp-server",
+      "args": [],
+      "autoApprove": [],
+      "env": {},
+      "debug": true
     }
   }
 }
 ```
+
+Add this configuration to your MCP client settings:
+
+**For Cline IDE:**
+- **macOS**: `~/Library/Application Support/Code/User/globalStorage/asbx.amzn-cline/settings/cline_mcp_settings.json`
+- **Linux**: `~/.config/Code/User/globalStorage/asbx.amzn-cline/settings/cline_mcp_settings.json`
+- **Windows**: `%APPDATA%\Code\User\globalStorage\asbx.amzn-cline\settings\cline_mcp_settings.json`
+
+**For Amazon Q CLI:**
+Add to your Q CLI MCP settings configuration.
 
 ### For Published Package (Future):
 
