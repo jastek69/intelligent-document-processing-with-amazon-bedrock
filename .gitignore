@@ -82,8 +82,9 @@ test_directs.py
 config.yml
 
 # MCP deployment generated files
-mcp/server/Dockerfile
-mcp/server/.dockerignore
-mcp/server/.bedrock_agentcore.yaml
-mcp/server/mcp_manual_config.json
-mcp/server/configs/
+mcp/bedrock_server/Dockerfile
+mcp/bedrock_server/.dockerignore
+mcp/bedrock_server/.bedrock_agentcore.yaml
+mcp/bedrock_server/mcp_manual_config.json
+mcp/bedrock_server/configs/
+mcp/local_server/configs/
