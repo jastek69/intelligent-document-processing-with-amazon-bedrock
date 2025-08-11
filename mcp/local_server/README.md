@@ -64,15 +64,9 @@ After running the deployment script, copy the configuration from `configs/mcp_st
 }
 ```
 
-Add this configuration to your MCP client settings:
+Add this configuration to your MCP client settings file.
 
-**For Cline IDE:**
-- **macOS**: `~/Library/Application Support/Code/User/globalStorage/asbx.amzn-cline/settings/cline_mcp_settings.json`
-- **Linux**: `~/.config/Code/User/globalStorage/asbx.amzn-cline/settings/cline_mcp_settings.json`
-- **Windows**: `%APPDATA%\Code\User\globalStorage\asbx.amzn-cline\settings\cline_mcp_settings.json`
-
-**For Amazon Q CLI:**
-Add to your Q CLI MCP settings configuration.
+Refer to your specific MCP client documentation for the correct configuration file location and format.
 
 ### For Published Package (Future):
 

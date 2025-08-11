@@ -205,55 +205,32 @@ mcp/bedrock_server/
 
 ### Updating Bearer Token
 
-Bearer tokens expire periodically and need to be refreshed. Use the provided scripts to automatically update your Cline MCP configuration:
+Bearer tokens expire periodically and need to be refreshed. Use the provided script to automatically update your MCP client configuration:
 
-**Option A: Shell Script (Recommended)**
+**Shell Script Usage:**
 ```bash
-# Update bearer token automatically
+# Update bearer token automatically (uses default config path)
 ./update_mcp_config.sh
 
-# Test what would be updated (dry run)
+# Test what would be updated without making changes (dry run)
 ./update_mcp_config.sh --dry-run
 
-# Use custom Cline config path
-./update_mcp_config.sh --config-path /path/to/cline_mcp_settings.json
+# Use custom MCP config path
+./update_mcp_config.sh --config-path /path/to/your/mcp_settings.json
 
-# Show help
+# Show help and usage information
 ./update_mcp_config.sh --help
 ```
-**The script will:**
-- ✅ Fetch the latest bearer token from AWS Secrets Manager
-- ✅ Automatically locate your Cline MCP settings file
-- ✅ Update the `idp-bedrock` server configuration
-- ✅ Create a backup of your config before changes
-- ✅ Preserve all other settings unchanged
 
-**Requirements:**
-- **Shell script**: `jq` and `aws` CLI tools
-- **Python script**: `boto3` Python library
+**What the script does:**
+- ✅ Fetches the latest bearer token from AWS Secrets Manager
+- ✅ Automatically locates your MCP client settings file
+- ✅ Updates the `idp-bedrock` server configuration
+- ✅ Creates a backup of your config before making changes
+- ✅ Preserves all other settings unchanged
 
-**Note:** You may need to restart Cline for the token changes to take effect.
+**Note:** You may need to restart your MCP client for the token changes to take effect.
 
-
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Rate Limiting (429 errors)**
-   - Wait between requests
-   - Use the built-in retry logic in tests
-   - Consider reducing test frequency
-
-2. **Authentication Errors**
-   - Verify AWS credentials are configured
-   - Check IAM permissions for Bedrock and S3 access
-   - Ensure Secrets Manager access is available
-
-3. **Document Processing Failures**
-   - Verify documents exist in the S3 bucket
-   - Check document format compatibility
-   - Review Bedrock model availability in your region
 
 ## License
 
