@@ -272,8 +272,8 @@ def run_idp_bedrock_api(
     parsing_mode: Optional[str] = "Amazon Textract",
     instructions: Optional[str] = "",
     few_shots: Optional[Sequence[Dict[str, Any]]] = None,
-    model_params: Optional[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    model_params: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     """
     Run IDP Bedrock to extract custom attributes and scores from the text(s)
     This mirrors the functionality from demo/utils.py
@@ -335,8 +335,8 @@ def extract_document_attributes(
     attributes: List[Dict[str, Any]],
     parsing_mode: str = "Amazon Textract",
     instructions: str = "",
-    few_shots: List[Dict[str, Any]] = None,
-    model_params: Dict[str, Any] = None,
+    few_shots: Optional[List[Dict[str, Any]]] = None,
+    model_params: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Extract custom attributes from documents using Amazon Bedrock and AWS document processing services.

@@ -5,7 +5,7 @@ Helper functions for MCP server tests
 import asyncio
 import time
 import random
-from typing import Callable, TypeVar
+from typing import Callable, TypeVar, Awaitable
 import httpx
 
 T = TypeVar("T")
@@ -27,7 +27,7 @@ def _is_retryable_error(e: Exception) -> bool:
 
 
 async def retry_with_backoff(
-    func: Callable[[], T],
+    func: Callable[[], Awaitable[T]],
     max_retries: int = 5,
     base_delay: float = 10.0,
     max_delay: float = 120.0,

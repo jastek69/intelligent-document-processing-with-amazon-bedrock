@@ -13,7 +13,7 @@ import requests
 import time
 import argparse
 from boto3.session import Session
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class Colors:
@@ -70,7 +70,7 @@ class MCPTester:
         """Print warning message"""
         print(f"   {Colors.YELLOW}⚠️  {message}{Colors.END}")
 
-    def get_mcp_config(self) -> Dict[str, Any]:
+    def get_mcp_config(self) -> Optional[Dict[str, Any]]:
         """Get MCP server configuration from AWS"""
         try:
             boto_session = Session()
@@ -108,7 +108,7 @@ class MCPTester:
             self.print_error(f"Could not retrieve MCP configuration: {e}")
             return None
 
-    def parse_sse_response(self, response_text: str) -> Dict[str, Any]:
+    def parse_sse_response(self, response_text: str) -> Optional[Dict[str, Any]]:
         """Parse Server-Sent Events response format"""
         lines = response_text.strip().split("\n")
         for line in lines:
@@ -356,7 +356,7 @@ class MCPTester:
         except Exception:
             return False
 
-    def get_bucket_name(self) -> str:
+    def get_bucket_name(self) -> Optional[str]:
         """Get the S3 bucket name from the MCP server"""
         try:
             bucket_request = {
