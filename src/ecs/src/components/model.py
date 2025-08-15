@@ -38,6 +38,10 @@ MODEL_IDS = {
     "Claude 3.7 Sonnet": "anthropic.claude-3-7-sonnet-20250219-v1:0",
     "Claude 4 Sonnet": "anthropic.claude-sonnet-4-20250514-v1:0",
     "Claude 4 Opus": "anthropic.claude-opus-4-20250514-v1:0",
+    "Claude 4.1 Opus": "anthropic.claude-opus-4-1-20250805-v1:0",
+    # OpenAI Models
+    "GPT OSS-120B": "openai.gpt-oss-120b-1:0",
+    "GPT OSS-20B": "openai.gpt-oss-20b-1:0",
     # DeepSeek Models
     "DeepSeek-R1": "deepseek.r1-v1:0",
     # Cohere Models
