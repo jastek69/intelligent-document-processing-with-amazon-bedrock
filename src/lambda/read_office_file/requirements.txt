@@ -9,4 +9,4 @@ pandas
 openpyxl
 unstructured==0.17.2
 langchain==0.3.25
-langchain-community==0.3.25
+langchain-community==0.3.27
