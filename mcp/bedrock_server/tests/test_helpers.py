@@ -126,7 +126,7 @@ def sync_retry_with_backoff(
                 delay = delay * (0.5 + random.random() * 0.5)
 
             print(f"Rate limit hit (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay:.1f}s...")
-            time.sleep(delay)
+            time.sleep(int(delay))
 
     # This should never be reached, but just in case
     if last_exception:
@@ -149,4 +149,4 @@ def sync_rate_limited_sleep(min_delay: float = 0.5, max_delay: float = 2.0):
     Synchronous version of rate_limited_sleep
     """
     delay = random.uniform(min_delay, max_delay)
-    time.sleep(delay)
+    time.sleep(int(delay))

@@ -116,7 +116,7 @@ def generate_conversation(
                 f"Retry attempt {retry_count}/{max_retries} after {backoff_time:.2f} "
                 f"seconds with model {retry_model_id}"
             )
-            time.sleep(backoff_time)
+            time.sleep(int(backoff_time))
 
             try:
                 response = bedrock_client.converse(

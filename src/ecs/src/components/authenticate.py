@@ -615,6 +615,7 @@ def exchange_code_for_token(code: str, token_endpoint: str, prod_direct_uri: str
     try:
         LOGGER.debug(f"Requesting token from {token_endpoint}")
         resp = requests.post(token_endpoint, data=data, headers=headers, timeout=60)
+        resp.raise_for_status()
         LOGGER.debug(f"Response status: {resp.status_code}, resp headers: {resp.headers}")
         if resp.status_code == 200:
             return resp.json()

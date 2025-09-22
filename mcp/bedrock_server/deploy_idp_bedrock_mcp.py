@@ -32,7 +32,7 @@ def load_config_yml():
         return None
 
     try:
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
     except Exception as e:
         print(f"❌ Error loading config.yml: {e}")
@@ -223,7 +223,7 @@ def deploy_and_wait(agentcore_runtime):
     end_status = ["READY", "CREATE_FAILED", "DELETE_FAILED", "UPDATE_FAILED"]
     while status not in end_status:
         print(f"Status: {status} - waiting...")
-        time.sleep(30)
+        time.sleep(int(30))
         status_response = agentcore_runtime.status()
         status = status_response.endpoint["status"]
 
@@ -268,10 +268,10 @@ def finalize_deployment(launch_result, cognito_config, mcp_user_config, infra_co
     # Save configuration files in configs directory
     os.makedirs("configs", exist_ok=True)
 
-    with open("configs/cline_agentcore_config.json", "w") as f:
+    with open("configs/cline_agentcore_config.json", "w", encoding="utf-8") as f:
         json.dump(config_data["cline_agentcore_config"], f, indent=2)
 
-    with open("configs/mcp_manual_config.json", "w") as f:
+    with open("configs/mcp_manual_config.json", "w", encoding="utf-8") as f:
         json.dump(config_data["manual_config"], f, indent=2)
 
     print("✅ Generated MCP configuration files:")

@@ -283,7 +283,7 @@ def upload_local_file(file_path: str, bucket_name: str) -> str:
             ) from verify_error
 
         # Brief wait for S3 consistency (much simpler now)
-        time.sleep(1)
+        time.sleep(int(1))
 
         return s3_key
 
@@ -486,7 +486,7 @@ def run_idp_bedrock_api(
     execution_arn = response["executionArn"]
 
     while True:
-        time.sleep(1)
+        time.sleep(int(1))
 
         response = stepfunctions_client.describe_execution(executionArn=execution_arn)
         status = response["status"]

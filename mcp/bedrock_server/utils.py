@@ -393,7 +393,7 @@ def create_agentcore_role(agent_name="idp-bedrock-mcp"):
         agentcore_iam_role = iam_client.create_role(
             RoleName=agentcore_role_name, AssumeRolePolicyDocument=assume_role_policy_document_json
         )
-        time.sleep(10)  # Wait for role creation
+        time.sleep(int(10))  # Wait for role creation
         print(f"✅ Created IAM role: {agentcore_role_name}")
 
     except iam_client.exceptions.EntityAlreadyExistsException:
@@ -409,7 +409,7 @@ def create_agentcore_role(agent_name="idp-bedrock-mcp"):
         agentcore_iam_role = iam_client.create_role(
             RoleName=agentcore_role_name, AssumeRolePolicyDocument=assume_role_policy_document_json
         )
-        time.sleep(10)
+        time.sleep(int(10))
         print(f"✅ Recreated IAM role: {agentcore_role_name}")
 
     # Attach policy

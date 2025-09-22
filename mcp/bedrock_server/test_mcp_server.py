@@ -154,6 +154,7 @@ class MCPTester:
             response = requests.post(
                 self.config["mcp_url"], headers=self.config["headers"], json=init_request, timeout=30
             )
+            response.raise_for_status()
             self.print_info(f"Status: {response.status_code}")
             self.print_info(f"Response time: {response.elapsed.total_seconds():.2f}s")
 
@@ -198,7 +199,7 @@ class MCPTester:
         }
 
         try:
-            time.sleep(1)  # Rate limiting delay
+            time.sleep(int(1))  # Rate limiting delay
             response = requests.post(
                 self.config["mcp_url"], headers=self.config["headers"], json=init_request, timeout=30
             )
@@ -241,7 +242,7 @@ class MCPTester:
         tools_request = {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
 
         try:
-            time.sleep(2)  # Rate limiting delay
+            time.sleep(int(2))  # Rate limiting delay
             response = requests.post(
                 self.config["mcp_url"], headers=self.config["headers"], json=tools_request, timeout=30
             )
@@ -302,7 +303,7 @@ class MCPTester:
         }
 
         try:
-            time.sleep(3)  # Rate limiting delay
+            time.sleep(int(3))  # Rate limiting delay
             response = requests.post(
                 self.config["mcp_url"], headers=self.config["headers"], json=bucket_request, timeout=60
             )
@@ -480,11 +481,12 @@ class MCPTester:
 
         try:
             self.print_info("Calling document extraction (may take 30-60 seconds)...")
-            time.sleep(5)  # Rate limiting delay
+            time.sleep(int(5))  # Rate limiting delay
 
             response = requests.post(
                 self.config["mcp_url"], headers=self.config["headers"], json=extract_request, timeout=180
             )
+            response.raise_for_status()
 
             success, status = self._process_extraction_response(response)
             self.print_test("Document Extraction", status)

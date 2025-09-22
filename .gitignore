@@ -75,6 +75,7 @@ cdk.context.json
 package-lock.json
 package.json
 *.DS_Store
+.dsr
 
 dyepack_scan/
 repomix-output.txt

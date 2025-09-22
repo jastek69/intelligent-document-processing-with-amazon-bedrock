@@ -1,10 +1,12 @@
 # IDP with Amazon Bedrock MCP Server
 
-This directory contains the Model Context Protocol (MCP) server implementation for the IDP (Intelligent Document Processing) with Amazon Bedrock project.
+This directory contains the Model Context Protocol (MCP) AgentCore server implementation for the IDP (Intelligent Document Processing) with Amazon Bedrock project.
 
 ## Overview
 
 The MCP server provides a standardized interface for document processing capabilities, allowing AI assistants and other clients to interact with the IDP system through the Model Context Protocol.
+
+![media/mcp_agentcore.png](../../media/mcp_agentcore.png)
 
 ## Features
 

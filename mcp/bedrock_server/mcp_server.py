@@ -310,7 +310,7 @@ def run_idp_bedrock_api(
     execution_arn = response["executionArn"]
 
     while True:
-        time.sleep(1)
+        time.sleep(int(1))
 
         response = stepfunctions_client.describe_execution(executionArn=execution_arn)
         status = response["status"]
