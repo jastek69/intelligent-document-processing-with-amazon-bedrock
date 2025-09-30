@@ -37,6 +37,7 @@ MODEL_IDS = {
     "Claude 3.5 Sonnet (V2)": "anthropic.claude-3-5-sonnet-20241022-v2:0",
     "Claude 3.7 Sonnet": "anthropic.claude-3-7-sonnet-20250219-v1:0",
     "Claude 4 Sonnet": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "Claude 4.5 Sonnet": "anthropic.claude-sonnet-4-5-20250929-v1:0",
     "Claude 4 Opus": "anthropic.claude-opus-4-20250514-v1:0",
     "Claude 4.1 Opus": "anthropic.claude-opus-4-1-20250805-v1:0",
     # DeepSeek Models
