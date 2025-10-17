@@ -191,6 +191,8 @@ Access the UI at [http://localhost:8501](http://localhost:8501)
 
 ### 3. MCP Integration
 
+> **⚠️ SECURITY NOTICE**: The MCP server package is NOT available on PyPI. Only use the local installation methods described below. Any package named `idp-bedrock-mcp-server` on PyPI is not official and may be malicious.
+
 Deploy MCP servers to expose document processing as standardized tools for AI agents.
 
 **Two Options Available:**
@@ -198,7 +200,7 @@ Deploy MCP servers to expose document processing as standardized tools for AI ag
 **Local Stdio Server** (recommended for development)
 - Supports local file upload
 - Uses your AWS credentials
-- Easy installation
+- Easy installation via local deployment script
 
 ```bash
 cd mcp/local_server/
