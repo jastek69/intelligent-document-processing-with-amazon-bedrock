@@ -20,6 +20,8 @@ This repository provides an AWS CDK solution for intelligent document processing
 - Process PDFs, MS Office files, images, and text via [Python API](demo/idp_bedrock_demo.ipynb) or [web interface](src/ecs/src/Home.py)
 - Deploy as MCP server to equip AI agents with document processing capabilities
 
+See the **Security** section below before deployment.
+
 ## Contents
 
 - [📹 Demo](#demo)
@@ -191,6 +193,8 @@ Access the UI at [http://localhost:8501](http://localhost:8501)
 
 ### 3. MCP Integration
 
+> **⚠️ SECURITY NOTICE**: The MCP server package is NOT available on PyPI. Only use the local installation methods described below. Any package named `idp-bedrock-mcp-server` on PyPI is not official and may be malicious.
+
 Deploy MCP servers to expose document processing as standardized tools for AI agents.
 
 **Two Options Available:**
@@ -198,7 +202,7 @@ Deploy MCP servers to expose document processing as standardized tools for AI ag
 **Local Stdio Server** (recommended for development)
 - Supports local file upload
 - Uses your AWS credentials
-- Easy installation
+- Easy installation via local deployment script
 
 ```bash
 cd mcp/local_server/
@@ -253,7 +257,7 @@ See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more inform
 
 ## 🔒️ Security
 
-Note: this asset represents a proof-of-value for the services included and is not intended as a production-ready solution. You must determine how the AWS Shared Responsibility applies to their specific use case and implement the needed controls to achieve their desired security outcomes. AWS offers a broad set of security tools and configurations to enable out customers.
+Note: this asset represents a proof-of-value for the services included and is not intended as a production-ready solution. The asset is not scoped for handling regulated and/or PII data. You must determine how the AWS Shared Responsibility applies to their specific use case and implement the needed controls to achieve their desired security outcomes. AWS offers a broad set of security tools and configurations to enable out customers.
 
 - **Network & Delivery:**
   - Amazon CloudFront:

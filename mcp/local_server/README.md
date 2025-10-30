@@ -38,6 +38,8 @@ uv pip install -e .
 
 ## Configuration
 
+> **⚠️ SECURITY NOTICE**: This package is NOT available on PyPI. Only use the local installation method described above via the deployment script. Do not attempt to install via `uvx` or `pip` from PyPI as any package with this name on PyPI is not official and may be malicious.
+
 The server requires AWS credentials and will auto-discover the following (optional environment variables):
 
 - `STATE_MACHINE_ARN`: ARN of the Step Functions state machine
@@ -67,26 +69,6 @@ After running the deployment script, copy the configuration from `configs/mcp_st
 Add this configuration to your MCP client settings file.
 
 Refer to your specific MCP client documentation for the correct configuration file location and format.
-
-### For Published Package (Future):
-
-Once published to PyPI, you can use:
-
-```json
-{
-  "mcpServers": {
-    "idp-bedrock-stdio": {
-      "command": "uvx",
-      "args": ["idp-bedrock-mcp-server@latest"],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
-```
 
 ## Available Tools
 
